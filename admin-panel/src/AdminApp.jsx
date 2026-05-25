@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import {
   LayoutDashboard, Users, TrendingUp, ArrowDownCircle,
   Settings, LogOut, ChevronRight, CheckCircle, XCircle,
-  CreditCard, Shield, Key, Bell, Search, MoreVertical
+  CreditCard, Shield, Key, Bell, Search, MoreVertical, Mail
 } from 'lucide-react'
 
 
