@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Settings = require('../models/Settings');
+const { createVirtualAccount } = require('../utils/vtstack');
 
 exports.claimDailyBonus = async (req, res) => {
   try {
@@ -34,6 +35,7 @@ exports.claimDailyBonus = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 exports.generateVirtualAccount = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -43,27 +45,58 @@ exports.generateVirtualAccount = async (req, res) => {
       return res.status(400).json({ message: 'You already have a virtual account.' });
     }
 
-    // Build the account name using the user's name or phone
-    const displayName = user.name && user.name !== 'User'
-      ? user.name.toUpperCase()
-      : (user.phone || user.email || 'USER');
+    // Prepare data for VTStack
+    const displayName = user.name || 'User';
+    const nameParts = displayName.trim().split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ') || 'User';
 
-    const accountNumber = '904' + Math.floor(1000000 + Math.random() * 9000000);
+    // Call VTStack to create real virtual account
+    let vtResponse;
+    try {
+        vtResponse = await createVirtualAccount({
+            _id: user._id,
+            firstName,
+            lastName,
+            email: user.email,
+            phone: user.phone,
+            bvn: user.bvn || undefined // Use user's BVN if exists
+        });
+    } catch (vtErr) {
+        // Log detailed error for admin
+        console.error('VTStack Error:', vtErr.response?.data || vtErr.message);
+        
+        // Return a cleaner error message to user
+        const errMsg = vtErr.response?.data?.message || vtErr.message || 'Failed to generate account with provider';
+        return res.status(400).json({ 
+            message: `Provider Error: ${errMsg}. Please ensure your profile is complete or contact support.` 
+        });
+    }
 
-    user.virtualAccount = {
-      number: accountNumber,
-      bank: 'PalmPay',
-      name: 'ONC-' + displayName
-    };
+    if (vtResponse && vtResponse.status === 'success') {
+      const { accountNumber, bankName, accountName } = vtResponse.data;
+      
+      user.virtualAccount = {
+        number: accountNumber,
+        bank: bankName,
+        name: accountName
+      };
 
-    await user.save();
+      await user.save();
 
-    res.status(200).json({
-      success: true,
-      message: 'Virtual account created successfully!',
-      virtualAccount: user.virtualAccount
-    });
+      res.status(200).json({
+        success: true,
+        message: 'Real virtual account created successfully!',
+        virtualAccount: user.virtualAccount
+      });
+    } else {
+      // Fallback for unexpected success-false or missing data
+      throw new Error('Provider did not return account details.');
+    }
+
   } catch (err) {
+    console.error('Account Generation Error:', err);
     res.status(500).json({ message: err.message });
   }
 };
+

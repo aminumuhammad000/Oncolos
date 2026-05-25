@@ -30,6 +30,9 @@ function Badge({ status }) {
     Pending: { bg: '#fffbeb', color: '#d97706' },
     Banned: { bg: '#fef2f2', color: '#dc2626' },
     Rejected: { bg: '#fef2f2', color: '#dc2626' },
+    verified: { bg: '#f0fdf4', color: '#16a34a' },
+    unverified: { bg: '#fef2f2', color: '#dc2626' },
+    pending: { bg: '#fffbeb', color: '#d97706' },
   }
   const s = map[status] || { bg: '#f1f5f9', color: '#64748b' }
   return (
@@ -126,6 +129,48 @@ export default function AdminApp() {
       });
     } catch (err) {
       console.error('Failed to update setting:', err);
+    }
+  };
+
+  const handleUpdateKYC = async (userId, kycStatus) => {
+    try {
+      const res = await fetch(`${API_BASE}/users/${userId}/kyc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kycStatus })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsers(prev => prev.map(u => u._id === userId ? { ...u, kycStatus } : u));
+        setSelectedUser(prev => prev ? { ...prev, kycStatus } : null);
+        alert('KYC status updated!');
+      }
+    } catch (err) {
+      console.error('Failed to update KYC:', err);
+      alert('Error updating KYC');
+    }
+  };
+
+  const handleAdjustBalance = async (userId) => {
+    const amount = prompt('Enter amount:');
+    const action = prompt('Action (add/deduct):');
+    if (!amount || !['add', 'deduct'].includes(action)) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/users/${userId}/balance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, action })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsers(prev => prev.map(u => u._id === userId ? { ...u, balance: data.newBalance } : u));
+        setSelectedUser(prev => prev ? { ...prev, balance: data.newBalance } : null);
+        alert('Balance updated!');
+      }
+    } catch (err) {
+      console.error('Failed to update balance:', err);
+      alert('Error updating balance');
     }
   };
 
@@ -276,7 +321,7 @@ export default function AdminApp() {
                             <td>₦{(u.balance || 0).toLocaleString()}</td>
                             <td>{(u.activeInvestments || []).length}</td>
                             <td className="muted">{new Date(u.createdAt).toLocaleDateString()}</td>
-                            <td><Badge status="Active" /></td>
+                            <td><Badge status={u.kycStatus || 'unverified'} /></td>
                           </tr>
                         );
                       })
@@ -532,18 +577,20 @@ export default function AdminApp() {
               <div className="detail-section">
                 <div className="detail-row"><span>Full Name</span><strong>{selectedUser.name}</strong></div>
                 <div className="detail-row"><span>Phone</span><strong>{selectedUser.phone}</strong></div>
+                <div className="detail-row"><span>BVN</span><strong>{selectedUser.bvn || 'Not provided'}</strong></div>
+                <div className="detail-row"><span>KYC Status</span><Badge status={selectedUser.kycStatus || 'unverified'} /></div>
                 <div className="detail-row"><span>Status</span><Badge status={selectedUser.status} /></div>
-                <div className="detail-row"><span>Joined</span><strong>{selectedUser.joined}</strong></div>
+                <div className="detail-row"><span>Joined</span><strong>{new Date(selectedUser.createdAt).toLocaleDateString()}</strong></div>
               </div>
               <div className="detail-section">
                 <h3>Financials</h3>
-                <div className="detail-row"><span>Available Balance</span><strong>₦{selectedUser.balance.toLocaleString()}</strong></div>
-                <div className="detail-row"><span>Total Investments</span><strong>{selectedUser.investments}</strong></div>
-                <div className="detail-row"><span>Direct Referrals</span><strong>{selectedUser.referrals}</strong></div>
+                <div className="detail-row"><span>Available Balance</span><strong>₦{(selectedUser.balance || 0).toLocaleString()}</strong></div>
+                <div className="detail-row"><span>Total Investments</span><strong>{(selectedUser.activeInvestments || []).length}</strong></div>
+                <div className="detail-row"><span>Direct Referrals</span><strong>{selectedUser.referralRewards || 0}</strong></div>
               </div>
               <div className="modal-actions-admin">
-                 <button className="admin-btn-secondary" onClick={() => alert('Account status updated')}>Change Status</button>
-                 <button className="admin-btn-primary" onClick={() => alert('Balance adjusted')}>Adjust Balance</button>
+                 <button className="admin-btn-secondary" onClick={() => handleUpdateKYC(selectedUser._id, 'verified')}>Approve KYC</button>
+                 <button className="admin-btn-primary" onClick={() => handleAdjustBalance(selectedUser._id)}>Adjust Balance</button>
               </div>
             </div>
           </div>

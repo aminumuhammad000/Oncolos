@@ -39,7 +39,9 @@ exports.register = async (req, res) => {
       referredBy: referralCode || null,
       balance: 0,
       withdrawBalance: 0,
-      virtualAccount: null
+      virtualAccount: null,
+      bvn: generatedBvn,
+      kycStatus: 'pending'
     });
 
     const token = signToken(newUser._id);

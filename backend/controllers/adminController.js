@@ -109,3 +109,41 @@ exports.updateWithdrawalStatus = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+exports.updateUserKYC = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { kycStatus } = req.body;
+    
+    if (!['unverified', 'pending', 'verified'].includes(kycStatus)) {
+      return res.status(400).json({ message: 'Invalid KYC status' });
+    }
+
+    const user = await User.findByIdAndUpdate(id, { kycStatus }, { new: true });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.status(200).json({ success: true, message: `User KYC status updated to ${kycStatus}` });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.updateUserBalance = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount, action } = req.body; // action: 'add' or 'deduct'
+    
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (action === 'add') user.balance += Number(amount);
+    else if (action === 'deduct') user.balance -= Number(amount);
+    else return res.status(400).json({ message: 'Invalid action' });
+
+    await user.save();
+    res.status(200).json({ success: true, message: `Balance updated for ${user.phone}`, newBalance: user.balance });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+

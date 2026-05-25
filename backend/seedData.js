@@ -27,7 +27,9 @@ const seedData = async () => {
                 referralCode: 'ONC1001',
                 balance: 45000,
                 withdrawBalance: 5000,
-                virtualAccount: { number: '8102345678', bank: 'PalmPay', name: 'ONC-HASSAN IBRAHIM' }
+                virtualAccount: { number: '8102345678', bank: 'PalmPay', name: 'ONC-HASSAN IBRAHIM' },
+                bvn: '22112233445',
+                kycStatus: 'verified'
             },
             {
                 name: 'Bola Ade',
@@ -38,7 +40,9 @@ const seedData = async () => {
                 referredBy: 'ONC1001',
                 balance: 45000,
                 withdrawBalance: 12000,
-                virtualAccount: { number: '8103222111', bank: 'PalmPay', name: 'ONC-BOLA ADE' }
+                virtualAccount: { number: '8103222111', bank: 'PalmPay', name: 'ONC-BOLA ADE' },
+                bvn: '22998877665',
+                kycStatus: 'verified'
             },
             {
                 name: 'Chisom Obi',
@@ -49,7 +53,9 @@ const seedData = async () => {
                 referredBy: 'ONC1002',
                 balance: 0,
                 withdrawBalance: 0,
-                virtualAccount: { number: '8101888990', bank: 'PalmPay', name: 'ONC-CHISOM OBI' }
+                virtualAccount: { number: '8101888990', bank: 'PalmPay', name: 'ONC-CHISOM OBI' },
+                bvn: '22887766554',
+                kycStatus: 'pending'
             }
         ];
 

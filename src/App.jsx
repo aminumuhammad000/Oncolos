@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Home, TrendingUp, Users, User, ArrowLeft, LogOut, Copy, Gift, Shield, Eye, EyeOff, Rocket, Wallet, CreditCard, Clock, Check, ArrowDownCircle, BarChart2 } from 'lucide-react'
+import { Home, TrendingUp, Users, User, ArrowLeft, LogOut, Copy, Gift, Shield, Eye, EyeOff, Rocket, Wallet, CreditCard, Clock, Check, ArrowDownCircle, BarChart2, X } from 'lucide-react'
 
 function App() {
   const [view, setView] = useState('login');

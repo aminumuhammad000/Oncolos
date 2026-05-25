@@ -84,6 +84,15 @@ const userSchema = new mongoose.Schema({
   lastClaimed: {
     type: Date,
     default: null
+  },
+  bvn: {
+    type: String,
+    default: null
+  },
+  kycStatus: {
+    type: String,
+    enum: ['unverified', 'pending', 'verified'],
+    default: 'unverified'
   }
 }, { timestamps: true });
 
