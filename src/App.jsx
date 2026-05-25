@@ -80,7 +80,7 @@ function App() {
     { price: 300000, daily: 50000 },
   ];
 
-  const API_URL = 'http://localhost:5000/api';
+  const API_URL = 'https://api.oncolos.com.ng/api';
 
   const handleLogin = async (e) => {
     e.preventDefault();

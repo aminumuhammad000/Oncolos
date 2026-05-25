@@ -57,7 +57,7 @@ export default function AdminApp() {
   const [referrals, setReferrals] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const API_BASE = 'http://localhost:5000/api/admin';
+  const API_BASE = 'https://api.oncolos.com.ng/api/admin';
 
   useEffect(() => {
     fetchData();
