@@ -53,7 +53,7 @@ exports.getAllReferrals = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-const Settings = require('../models/Settings');
+
 
 exports.getSettings = async (req, res) => {
   try {
