@@ -50,7 +50,9 @@ export default function AdminApp() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedInvestment, setSelectedInvestment] = useState(null);
-  const [platformSettings, setPlatformSettings] = useState({ isDailyBonusEnabled: true });
+  const [platformSettings, setPlatformSettings] = useState({ isDailyBonusEnabled: true, isWelcomeBonusEnabled: true, welcomeBonusAmount: 600, isWithdrawalEnabled: true, withdrawalFee: 50 });
+  const [gateway, setGateway] = useState({ provider: 'VTStack (Recommended)', mode: 'test', publicKey: '', payoutKey: '', webhookSecret: '' });
+  const [emailSettings, setEmailSettings] = useState({ smtpEmail: '', appPassword: '' });
   const [withdrawals, setWithdrawals] = useState([]);
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
