@@ -25,13 +25,14 @@ exports.createVirtualAccount = async (userData) => {
       headers: { 'x-api-key': apiKey }
     });
 
-    if (response.data.status === 'success' || response.data.status === true) {
+    // VTStack returns success: true for successful creation
+    if (response.data.success === true || response.data.status === 'success' || response.data.status === 'active') {
       const acc = response.data.data;
       return {
         status: 'success',
         data: {
           accountNumber: acc.account_number || acc.accountNumber,
-          bankName: acc.bank_name || acc.bankName || 'VTStack Bank',
+          bankName: acc.bank_name || acc.bankName || 'PalmPay', 
           accountName: acc.account_name || acc.accountName
         }
       };
