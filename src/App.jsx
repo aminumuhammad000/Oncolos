@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Home, TrendingUp, Users, User, ArrowLeft, LogOut, Copy, Gift, Shield, Eye, EyeOff, Rocket, Wallet, CreditCard, Clock, Check, ArrowDownCircle, BarChart2, X } from 'lucide-react'
+import { Home, TrendingUp, Users, User, ArrowLeft, LogOut, Copy, Gift, Shield, Eye, EyeOff, Rocket, Wallet, CreditCard, Clock, Check, ArrowDownCircle, BarChart2, X, PlusCircle, ChevronRight, MessageSquare, Headset, Send } from 'lucide-react'
 
 function App() {
   const [view, setView] = useState('login');
@@ -14,6 +14,10 @@ function App() {
   const [withdrawForm, setWithdrawForm] = useState({ bank: '', accountNumber: '', resolvedName: '', amount: '', isResolving: false });
   const [successAlert, setSuccessAlert] = useState(null);
   const [errorAlert, setErrorAlert] = useState(null);
+  const [urlReferralCode, setUrlReferralCode] = useState('');
+  const [realBanks, setRealBanks] = useState([]);
+  const [rechargeAmount, setRechargeAmount] = useState(2500);
+  const [rechargeStep, setRechargeStep] = useState('select'); // 'select' or 'pay'
 
   const hasClaimedToday = user?.lastClaimed && (new Date() - new Date(user.lastClaimed)) < (23 * 60 * 60 * 1000);
 
@@ -40,18 +44,39 @@ function App() {
     recoverSession();
   }, []);
 
-  const nigeriaBanks = [
-    'Access Bank', 'First Bank', 'GTBank', 'Zenith Bank', 'UBA',
-    'Wema Bank', 'Kuda Bank', 'OPay', 'Moniepoint', 'PalmPay',
-    'Stanbic IBTC', 'FCMB', 'Fidelity Bank', 'Sterling Bank', 'Polaris Bank'
-  ];
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      setUrlReferralCode(ref);
+      if (!localStorage.getItem('oncolos_token') && view === 'login') {
+        setView('register');
+      }
+    }
+  }, [view]);
 
-  const simulateNameLookup = (accountNumber, bank) => {
-    if (accountNumber.length === 10 && bank) {
+
+  const handleNameLookup = async (accountNumber, bankCode) => {
+    if (accountNumber.length === 10 && bankCode) {
       setWithdrawForm(prev => ({ ...prev, isResolving: true, resolvedName: '' }));
-      setTimeout(() => {
-        setWithdrawForm(prev => ({ ...prev, isResolving: false, resolvedName: user?.name.toUpperCase() }));
-      }, 1200);
+      try {
+        const res = await fetch(`${API_URL}/users/verify-account`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('oncolos_token')}`
+          },
+          body: JSON.stringify({ accountNumber, bankCode })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setWithdrawForm(prev => ({ ...prev, isResolving: false, resolvedName: data.data.account_name }));
+        } else {
+          setWithdrawForm(prev => ({ ...prev, isResolving: false, resolvedName: '' }));
+        }
+      } catch (err) {
+        setWithdrawForm(prev => ({ ...prev, isResolving: false, resolvedName: '' }));
+      }
     } else {
       setWithdrawForm(prev => ({ ...prev, resolvedName: '' }));
     }
@@ -59,10 +84,26 @@ function App() {
 
   const handleWithdrawSubmit = (e) => {
     e.preventDefault();
-    if (!withdrawForm.resolvedName) { alert('Please enter a valid 10-digit account number.'); return; }
-    if (parseFloat(withdrawForm.amount) < 600) { alert('Minimum withdrawal is ₦600.'); return; }
-    if (parseFloat(withdrawForm.amount) > (user?.balance || 0)) { alert('Insufficient balance.'); return; }
-    alert(`Withdrawal of ₦${parseFloat(withdrawForm.amount).toLocaleString()} to ${withdrawForm.resolvedName} (${withdrawForm.bank}) has been submitted!`);
+    if (!withdrawForm.resolvedName) { 
+        setErrorAlert({ title: 'Invalid Account', message: 'Please enter a valid 10-digit account number that can be verified.' });
+        return; 
+    }
+    if (parseFloat(withdrawForm.amount) < 600) { 
+        setErrorAlert({ title: 'Minimum Amount', message: 'Minimum withdrawal is ₦600.' });
+        return; 
+    }
+    if (parseFloat(withdrawForm.amount) > (user?.balance || 0)) { 
+        setErrorAlert({ title: 'Insufficient Funds', message: 'You do not have enough balance for this withdrawal.' });
+        return; 
+    }
+    
+    const bankName = realBanks.find(b => b.code === withdrawForm.bank)?.name || 'the selected bank';
+    
+    setSuccessAlert({ 
+        title: 'Transaction Submitted!', 
+        message: `Your withdrawal of ₦${parseFloat(withdrawForm.amount).toLocaleString()} to ${withdrawForm.resolvedName} (${bankName}) is being processed. It will arrive shortly.` 
+    });
+    
     setWithdrawForm({ bank: '', accountNumber: '', resolvedName: '', amount: '', isResolving: false });
     setView('dashboard');
   };
@@ -141,6 +182,25 @@ function App() {
     setUser(null);
     setView('login');
   };
+
+  useEffect(() => {
+    if (view === 'withdraw' && realBanks.length === 0) {
+      const fetchBanks = async () => {
+        try {
+          const res = await fetch(`${API_URL}/users/banks`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('oncolos_token')}` }
+          });
+          const data = await res.json();
+          if (res.ok) {
+            setRealBanks(data.data);
+          }
+        } catch (err) {
+          console.error('Failed to fetch banks');
+        }
+      };
+      fetchBanks();
+    }
+  }, [view]);
 
   const handleSignIn = async () => {
     if (hasClaimedToday) return;
@@ -290,7 +350,12 @@ function App() {
                 </div>
                 <div className="form-group">
                   <label>Referral Code (Optional)</label>
-                  <input type="text" name="refcode" placeholder="ONC1234" />
+                  <input 
+                    type="text" 
+                    name="refcode" 
+                    placeholder="ONC1234" 
+                    defaultValue={urlReferralCode}
+                  />
                 </div>
                 {authError && <p style={{color: '#dc2626', fontSize: '0.875rem', marginBottom: '1rem'}}>{authError}</p>}
                 <button type="submit" className="btn btn-primary" disabled={loading} style={{marginTop: '1rem'}}>
@@ -369,11 +434,11 @@ function App() {
           <div className="dash-header">
             <div className="user-profile clickable" onClick={() => setView('profile')}>
               <div className="avatar-circle">
-                {user?.name.charAt(0)}
+                {((user?.name && user.name !== 'User') ? user.name : user?.phone).charAt(0)}
               </div>
               <div className="user-info">
-                <h2>{user?.name}</h2>
-                <p>{user.phone}</p>
+                <h2>{(user?.name && user.name !== 'User') ? user.name : user?.phone}</h2>
+                <p style={{fontSize: '0.8rem', opacity: 0.7}}>Member | {user?.phone}</p>
               </div>
             </div>
           </div>
@@ -479,6 +544,10 @@ function App() {
           {/* Quick Actions Grid */}
           <div className="section-title" style={{marginBottom: '0.75rem'}}>Quick Actions</div>
           <div className="quick-actions-grid">
+            <button className="quick-action-item" onClick={() => setView('recharge')}>
+              <div className="qa-icon" style={{background: '#fdf2f8', color: '#db2777'}}><PlusCircle size={22} /></div>
+              <span>Recharge</span>
+            </button>
             <button className="quick-action-item" onClick={() => setView('withdraw')}>
               <div className="qa-icon" style={{background: '#eff6ff', color: '#2563eb'}}><ArrowDownCircle size={22} /></div>
               <span>Withdraw</span>
@@ -494,6 +563,10 @@ function App() {
             <button className="quick-action-item" onClick={() => setView('referral')}>
               <div className="qa-icon" style={{background: '#fff7ed', color: '#ea580c'}}><Users size={22} /></div>
               <span>Referral</span>
+            </button>
+            <button className="quick-action-item" onClick={() => setView('support')}>
+              <div className="qa-icon" style={{background: '#f0f9ff', color: '#0ea5e9'}}><Headset size={22} /></div>
+              <span>Support</span>
             </button>
           </div>
 
@@ -537,6 +610,231 @@ function App() {
         </div>
       )}
 
+      {view === 'recharge' && (
+        <div className="glass-card dash-view fade-in">
+          <div className="profile-nav">
+                <button className="back-btn" onClick={() => rechargeStep === 'pay' ? setRechargeStep('select') : setView('dashboard')}>
+                <ArrowLeft size={20} /> Back
+                </button>
+            </div>
+          
+          <div className="recharge-container" style={{padding: '0 0.5rem'}}>
+            {rechargeStep === 'select' ? (
+                <>
+                    <h1 style={{fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.25rem'}}>Recharge Wallet</h1>
+                    <p style={{color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem'}}>Select an investment amount to add funds</p>
+
+                    <div className="recharge-amounts-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '2rem'}}>
+                        {plans.map((p, i) => (
+                            <button 
+                                key={i} 
+                                onClick={() => setRechargeAmount(p.price)}
+                                style={{
+                                    padding: '0.875rem 0.5rem',
+                                    borderRadius: '12px',
+                                    border: rechargeAmount === p.price ? '2px solid var(--primary)' : '1px solid var(--border)',
+                                    background: rechargeAmount === p.price ? 'var(--primary-light)' : 'white',
+                                    color: rechargeAmount === p.price ? 'var(--primary)' : 'var(--text-main)',
+                                    fontWeight: '700',
+                                    fontSize: '0.875rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                ₦{p.price.toLocaleString()}
+                            </button>
+                        ))}
+                        <button 
+                                onClick={() => document.getElementById('manual-amount-input').focus()}
+                                style={{
+                                    padding: '0.875rem 0.5rem',
+                                    borderRadius: '12px',
+                                    border: '1px dashed var(--primary)',
+                                    background: 'white',
+                                    color: 'var(--primary)',
+                                    fontWeight: '700',
+                                    fontSize: '0.875rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Others
+                            </button>
+                    </div>
+
+                    <div className="form-group">
+                        <label>Manual Amount (₦)</label>
+                        <div style={{position: 'relative'}}>
+                            <span style={{position: 'absolute', left: '1rem', top: '1rem', fontWeight: '700', color: 'var(--text-main)'}}>₦</span>
+                            <input 
+                                id="manual-amount-input"
+                                type="number" 
+                                value={rechargeAmount} 
+                                onChange={(e) => setRechargeAmount(e.target.value)}
+                                placeholder="Enter amount"
+                                style={{paddingLeft: '2.2rem', fontSize: '1.25rem', fontWeight: '800'}}
+                            />
+                        </div>
+                    </div>
+
+                    <button 
+                        className="admin-btn-primary" 
+                        style={{marginTop: '2.5rem'}}
+                        onClick={() => {
+                            if (rechargeAmount < 500) { alert('Minimum recharge is ₦500'); return; }
+                            setRechargeStep('pay');
+                        }}
+                    >
+                        Buy Now
+                    </button>
+                </>
+            ) : (
+                <div className="payment-step fade-in">
+                    <h2 style={{fontSize: '1.25rem', fontWeight: '800', marginBottom: '0.5rem'}}>Complete Payment</h2>
+                    <p style={{color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '2rem'}}>Kindly transfer the exact amount to the account below</p>
+
+                    <div style={{background: 'var(--bg-main)', padding: '1.5rem', borderRadius: '24px', border: '1px dashed var(--primary)', textAlign: 'center', marginBottom: '2rem'}}>
+                        <p style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem'}}>Amount to Pay</p>
+                        <h3 style={{fontSize: '2rem', fontWeight: '900', color: 'var(--primary)'}}>₦{parseFloat(rechargeAmount).toLocaleString()}</h3>
+                    </div>
+
+                    <div className="virtual-account-card recharge-va" style={{background: 'white', boxShadow: 'none', border: '1px solid var(--border)', padding: '1.5rem'}}>
+                        <div className="va-row">
+                            <span>Bank Name</span>
+                            <strong>{user.virtualAccount?.bank || 'Fetching...'}</strong>
+                        </div>
+                        <div className="va-row">
+                            <span>Account Number</span>
+                            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                <strong style={{fontSize: '1.1rem'}}>{user.virtualAccount?.number || '—'}</strong>
+                                <button className="copy-va" onClick={() => { navigator.clipboard.writeText(user.virtualAccount.number); setSuccessAlert({ title: 'Copied!', message: 'Account number copied.' }); }}>
+                                    <Copy size={14} />
+                                </button>
+                            </div>
+                        </div>
+                        <div className="va-row">
+                            <span>Beneficiary</span>
+                            <strong style={{fontSize: '0.8125rem'}}>{user.virtualAccount?.name || user.name.toUpperCase()}</strong>
+                        </div>
+                    </div>
+
+                    <div style={{marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                        <button 
+                            className="admin-btn-primary" 
+                            style={{background: '#16a34a'}}
+                            onClick={() => {
+                                setView('dashboard');
+                                setRechargeStep('select');
+                                setSuccessAlert({ 
+                                    title: 'Payment Noted!', 
+                                    message: 'Our system is verifying your payment. Your balance will be updated automatically within 2-5 minutes.' 
+                                });
+                            }}
+                        >
+                            I Have Paid
+                        </button>
+                        <button 
+                            className="admin-btn-secondary" 
+                            style={{border: 'none', background: 'transparent', color: 'var(--text-muted)'}}
+                            onClick={() => setRechargeStep('select')}
+                        >
+                            Change Amount
+                        </button>
+                    </div>
+                </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {view === 'support' && (
+        <div className="glass-card dash-view fade-in">
+          <div className="profile-nav">
+                <button className="back-btn" onClick={() => setView('dashboard')}>
+                <ArrowLeft size={20} /> Back
+                </button>
+            </div>
+          
+          <div className="support-container" style={{padding: '0 0.5rem'}}>
+            <h1 style={{fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.25rem'}}>Customer Support</h1>
+            <p style={{color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '2rem'}}>Need help? Join our community or chat with us</p>
+
+            <div className="support-links" style={{display: 'flex', flexDirection: 'column', gap: '1.25rem'}}>
+                {/* WhatsApp */}
+                <a 
+                    href="https://chat.whatsapp.com/BB2589A94jY5lsnXYCT6qb" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="support-card" 
+                    style={{
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '1.25rem', 
+                        padding: '1.5rem', 
+                        background: '#f0fdf4', 
+                        borderRadius: '20px', 
+                        textDecoration: 'none',
+                        color: '#166534',
+                        border: '1px solid #bbf7d0'
+                    }}
+                >
+                    <div style={{background: '#25d366', color: 'white', padding: '0.875rem', borderRadius: '16px'}}>
+                        <MessageSquare size={28} />
+                    </div>
+                    <div style={{flex: 1}}>
+                        <h3 style={{fontSize: '1.1rem', fontWeight: '800', marginBottom: '0.125rem'}}>WhatsApp Group</h3>
+                        <p style={{fontSize: '0.8125rem', opacity: 0.8}}>Join our official community for updates</p>
+                    </div>
+                    <ChevronRight size={20} />
+                </a>
+
+                {/* Telegram */}
+                <a 
+                    href="https://t.me/+WxrTYkKqS9ZjYjg0" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="support-card" 
+                    style={{
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '1.25rem', 
+                        padding: '1.5rem', 
+                        background: '#f0f9ff', 
+                        borderRadius: '20px', 
+                        textDecoration: 'none',
+                        color: '#0369a1',
+                        border: '1px solid #bae6fd'
+                    }}
+                >
+                    <div style={{background: '#0088cc', color: 'white', padding: '0.875rem', borderRadius: '16px'}}>
+                        <Send size={28} />
+                    </div>
+                    <div style={{flex: 1}}>
+                        <h3 style={{fontSize: '1.1rem', fontWeight: '800', marginBottom: '0.125rem'}}>Telegram Channel</h3>
+                        <p style={{fontSize: '0.8125rem', opacity: 0.8}}>Get the latest news and investment tips</p>
+                    </div>
+                    <ChevronRight size={20} />
+                </a>
+
+                <div 
+                    className="support-info-card" 
+                    style={{
+                        marginTop: '1.5rem',
+                        padding: '1.5rem',
+                        background: '#f8fafc',
+                        borderRadius: '20px',
+                        border: '1px solid var(--border)',
+                        textAlign: 'center'
+                    }}
+                >
+                    <Shield size={32} color="var(--primary)" style={{marginBottom: '0.75rem', opacity: 0.2}} />
+                    <p style={{fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '0.5rem'}}>Official Support Hours</p>
+                    <p style={{fontSize: '0.8125rem', color: 'var(--text-muted)'}}>Monday - Sunday: 9:00 AM - 6:00 PM</p>
+                </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {view === 'profile' && (
         <div className="glass-card dash-view fade-in">
           <div className="profile-nav">
@@ -548,10 +846,10 @@ function App() {
           <div className="profile-container">
             <div className="profile-card">
               <div className="profile-avatar">
-                {user?.name.charAt(0)}
+                {((user?.name && user.name !== 'User') ? user.name : user?.phone).charAt(0)}
               </div>
-              <h2 style={{marginBottom: '0.25rem'}}>{user?.name}</h2>
-              <p style={{color: 'var(--text-muted)', fontSize: '0.875rem'}}>{user.phone}</p>
+              <h2 style={{marginBottom: '0.25rem'}}>{(user?.name && user.name !== 'User') ? user.name : user?.phone}</h2>
+              <p style={{color: 'var(--text-muted)', fontSize: '0.875rem'}}>Official Account</p>
             </div>
 
             <hr style={{border: 'none', borderTop: '1px solid var(--border)', margin: '1rem 0'}} />
@@ -633,9 +931,42 @@ function App() {
 
             <div className="code-card">
               <p style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>Your Referral Code</p>
-              <span className="code-text">{user?.referralCode}</span>
-              <button className="btn btn-secondary" onClick={() => {navigator.clipboard.writeText(user?.referralCode); alert('Code copied!')}} style={{height: '40px', fontSize: '0.875rem', gap: '8px'}}>
+              <span className="code-text" style={{letterSpacing: '4px'}}>{user?.referralCode}</span>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => {navigator.clipboard.writeText(user?.referralCode); setSuccessAlert({ title: 'Copied!', message: 'Referral code copied to clipboard.' });}} 
+                style={{height: '40px', fontSize: '0.875rem', gap: '8px', marginBottom: '1rem'}}
+              >
                 <Copy size={16} /> Copy Code
+              </button>
+
+              <hr style={{border: 'none', borderTop: '1px solid var(--border)', margin: '1rem 0'}} />
+
+              <p style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>Invitation Link</p>
+              <div style={{
+                background: '#fff',
+                padding: '0.75rem',
+                borderRadius: '8px',
+                fontSize: '0.8125rem',
+                color: 'var(--text-main)',
+                wordBreak: 'break-all',
+                border: '1px solid var(--border)',
+                marginBottom: '0.75rem',
+                marginTop: '0.5rem',
+                textAlign: 'left'
+              }}>
+                {`https://oncolos.com.ng/?ref=${user?.referralCode}`}
+              </div>
+              <button 
+                className="btn btn-primary" 
+                onClick={() => {
+                  const link = `https://oncolos.com.ng/?ref=${user?.referralCode}`;
+                  navigator.clipboard.writeText(link); 
+                  setSuccessAlert({ title: 'Link Copied!', message: 'Your invitation link is ready to share.' });
+                }} 
+                style={{height: '40px', fontSize: '0.875rem', gap: '8px'}}
+              >
+                <Copy size={16} /> Copy Invitation Link
               </button>
             </div>
 
@@ -747,15 +1078,15 @@ function App() {
                 <select 
                   value={withdrawForm.bank}
                   onChange={(e) => {
-                    const bank = e.target.value;
-                    setWithdrawForm(prev => ({ ...prev, bank }));
-                    simulateNameLookup(withdrawForm.accountNumber, bank);
+                    const bankCode = e.target.value;
+                    setWithdrawForm(prev => ({ ...prev, bank: bankCode }));
+                    handleNameLookup(withdrawForm.accountNumber, bankCode);
                   }}
                   required
                   style={{width: '100%', padding: '0.875rem 1rem', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '1rem', background: 'white', color: 'var(--text-main)', appearance: 'none'}}
                 >
                   <option value="">-- Choose your bank --</option>
-                  {nigeriaBanks.map(bank => <option key={bank} value={bank}>{bank}</option>)}
+                  {realBanks.map(bank => <option key={bank.code} value={bank.code}>{bank.name}</option>)}
                 </select>
               </div>
 
@@ -768,7 +1099,7 @@ function App() {
                   onChange={(e) => {
                     const accountNumber = e.target.value.slice(0, 10);
                     setWithdrawForm(prev => ({ ...prev, accountNumber }));
-                    simulateNameLookup(accountNumber, withdrawForm.bank);
+                    handleNameLookup(accountNumber, withdrawForm.bank);
                   }}
                   required
                 />

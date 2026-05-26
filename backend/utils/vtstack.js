@@ -25,7 +25,7 @@ exports.createVirtualAccount = async (userData) => {
       headers: { 'x-api-key': apiKey }
     });
 
-    return response.data;
+    if (response.data.status === "success" || response.data.status === true) { const acc = response.data.data; return { status: "success", data: { accountNumber: acc.account_number || acc.accountNumber, bankName: acc.bank_name || acc.bankName || "VTStack Bank", accountName: acc.account_name || acc.accountName } }; } return response.data;
   } catch (err) {
     console.error('VTStack Create Account Error:', err.response?.data || err.message);
     throw err;
@@ -42,7 +42,7 @@ exports.verifyBankAccount = async (bankCode, accountNumber) => {
       params: { bankCode, accountNumber },
       headers: { 'x-api-key': apiKey }
     });
-    return response.data;
+    if (response.data.status === "success" || response.data.status === true) { const acc = response.data.data; return { status: "success", data: { accountNumber: acc.account_number || acc.accountNumber, bankName: acc.bank_name || acc.bankName || "VTStack Bank", accountName: acc.account_name || acc.accountName } }; } return response.data;
   } catch (err) {
     throw err;
   }
@@ -71,7 +71,7 @@ exports.initiatePayout = async (payload) => {
         'Content-Type': 'application/json'
       }
     });
-    return response.data;
+    if (response.data.status === "success" || response.data.status === true) { const acc = response.data.data; return { status: "success", data: { accountNumber: acc.account_number || acc.accountNumber, bankName: acc.bank_name || acc.bankName || "VTStack Bank", accountName: acc.account_name || acc.accountName } }; } return response.data;
   } catch (err) {
     console.error('VTStack Payout Error:', err.response?.data || err.message);
     throw err;

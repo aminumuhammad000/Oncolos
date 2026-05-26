@@ -56,6 +56,16 @@ const seedData = async () => {
                 virtualAccount: { number: '8101888990', bank: 'PalmPay', name: 'ONC-CHISOM OBI' },
                 bvn: '22887766554',
                 kycStatus: 'pending'
+            },
+            {
+                name: 'Super Admin',
+                phone: '0000000000',
+                email: 'admin@oncolos.com.ng',
+                password: 'adminpassword',
+                referralCode: 'ADMIN01',
+                role: 'admin',
+                balance: 0,
+                kycStatus: 'verified'
             }
         ];
 

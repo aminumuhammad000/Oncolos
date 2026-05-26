@@ -44,15 +44,16 @@ function Badge({ status }) {
 
 /* ─── Main Admin App ────────────────────────────────────── */
 export default function AdminApp() {
+  const [view, setView] = useState('login');
   const [section, setSection] = useState('dashboard');
   const [search, setSearch] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedInvestment, setSelectedInvestment] = useState(null);
-  const [gateway, setGateway] = useState({ provider: 'VTStack (Recommended)', publicKey: '', payoutKey: '', webhookSecret: '', mode: 'test' });
-  const [emailSettings, setEmailSettings] = useState({ smtpEmail: '', appPassword: '' });
   const [platformSettings, setPlatformSettings] = useState({ isDailyBonusEnabled: true });
   const [withdrawals, setWithdrawals] = useState([]);
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
 
   const [stats, setStats] = useState({ totalUsers: 0, activeInvestments: 0, totalBalance: 0, pendingWithdrawals: 0 });
   const [users, setUsers] = useState([]);
@@ -63,39 +64,63 @@ export default function AdminApp() {
   const API_BASE = 'https://api.oncolos.com.ng/api/admin';
 
   useEffect(() => {
-    fetchData();
-  }, [section]);
+    const token = localStorage.getItem('oncolos_admin_token');
+    if (token) {
+      setView('dashboard');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (view === 'dashboard') {
+      fetchData();
+    }
+  }, [section, view]);
 
   const fetchData = async () => {
     setLoading(true);
+    const token = localStorage.getItem('oncolos_admin_token');
+    if (!token) return setView('login');
+
     try {
       if (section === 'dashboard') {
-        const res = await fetch(`${API_BASE}/stats`);
+        const res = await fetch(`${API_BASE}/stats`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const data = await res.json();
         if (data.success) setStats(data.data);
       }
       if (section === 'users') {
-        const res = await fetch(`${API_BASE}/users`);
+        const res = await fetch(`${API_BASE}/users`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const data = await res.json();
         if (data.success) setUsers(data.data);
       }
       if (section === 'investments') {
-        const res = await fetch(`${API_BASE}/investments`);
+        const res = await fetch(`${API_BASE}/investments`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const data = await res.json();
         if (data.success) setInvestments(data.data);
       }
       if (section === 'referrals') {
-        const res = await fetch(`${API_BASE}/referrals`);
+        const res = await fetch(`${API_BASE}/referrals`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const data = await res.json();
         if (data.success) setReferrals(data.data);
       }
       if (section === 'withdrawals') {
-        const res = await fetch(`${API_BASE}/withdrawals`);
+        const res = await fetch(`${API_BASE}/withdrawals`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const data = await res.json();
         if (data.success) setWithdrawals(data.data);
       }
       if (section === 'settings') {
-        const res = await fetch(`${API_BASE}/settings`);
+        const res = await fetch(`${API_BASE}/settings`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const data = await res.json();
         if (data.success) setPlatformSettings(data.data);
       }
@@ -111,7 +136,10 @@ export default function AdminApp() {
       setWithdrawals(prev => prev.map(w => w._id === id ? { ...w, status } : w));
       await fetch(`${API_BASE}/withdrawals/${id}/status`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('oncolos_admin_token')}`
+        },
         body: JSON.stringify({ status })
       });
     } catch (err) {
@@ -124,7 +152,10 @@ export default function AdminApp() {
       setPlatformSettings({ ...platformSettings, isDailyBonusEnabled: value });
       await fetch(`${API_BASE}/settings`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('oncolos_admin_token')}`
+        },
         body: JSON.stringify({ key: 'isDailyBonusEnabled', value })
       });
     } catch (err) {
@@ -136,7 +167,10 @@ export default function AdminApp() {
     try {
       const res = await fetch(`${API_BASE}/users/${userId}/kyc`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('oncolos_admin_token')}`
+        },
         body: JSON.stringify({ kycStatus })
       });
       const data = await res.json();
@@ -159,7 +193,10 @@ export default function AdminApp() {
     try {
       const res = await fetch(`${API_BASE}/users/${userId}/balance`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('oncolos_admin_token')}`
+        },
         body: JSON.stringify({ amount, action })
       });
       const data = await res.json();
@@ -182,6 +219,68 @@ export default function AdminApp() {
     { id: 'withdrawals', label: 'Withdrawals',   icon: ArrowDownCircle },
     { id: 'settings',   label: 'Settings',      icon: Settings },
   ];
+
+  const handleAdminLogin = async (e) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError('');
+    const email = e.target.email.value;
+    const password = e.target.password.value;
+
+    try {
+      const res = await fetch('https://api.oncolos.com.ng/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Login failed');
+      
+      if (data.data.user.role !== 'admin') {
+        throw new Error('Access denied. You are not an admin.');
+      }
+
+      localStorage.setItem('oncolos_admin_token', data.token);
+      setView('dashboard');
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('oncolos_admin_token');
+    setView('login');
+  };
+
+  if (view === 'login') {
+    return (
+      <div className="admin-login-layout">
+        <div className="admin-login-card">
+          <div className="login-header">
+            <div className="shield-wrap"><Shield size={32} /></div>
+            <h1>Admin Portal</h1>
+            <p>Oncolos Management System</p>
+          </div>
+          <form onSubmit={handleAdminLogin}>
+            <div className="form-group">
+              <label>Email Address</label>
+              <input type="email" name="email" placeholder="admin@oncolos.com.ng" required />
+            </div>
+            <div className="form-group">
+              <label>Password</label>
+              <input type="password" name="password" placeholder="••••••••" required />
+            </div>
+            {authError && <p className="auth-error-msg">{authError}</p>}
+            <button className="admin-btn-primary" disabled={authLoading}>
+              {authLoading ? 'Authenticating...' : 'Sign In to Panel'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-shell">
@@ -209,9 +308,9 @@ export default function AdminApp() {
             </button>
           ))}
         </nav>
-        <button className="sidebar-item logout-item" onClick={() => window.location.href = '/'}>
+        <button className="sidebar-item logout-item" onClick={handleLogout}>
           <LogOut size={20} />
-          {sidebarOpen && <span>Exit Panel</span>}
+          {sidebarOpen && <span>Sign Out</span>}
         </button>
       </aside>
 

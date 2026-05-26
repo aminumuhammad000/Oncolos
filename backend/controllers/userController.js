@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Settings = require('../models/Settings');
 const { createVirtualAccount } = require('../utils/vtstack');
+const { createPaystackVirtualAccount, getBanks, verifyAccount } = require('../utils/paystack');
 
 exports.claimDailyBonus = async (req, res) => {
   try {
@@ -56,6 +57,7 @@ exports.generateVirtualAccount = async (req, res) => {
     let fallbackUsed = false;
 
     try {
+        // Try VTStack first as requested
         vtResponse = await createVirtualAccount({
             _id: user._id,
             firstName,
@@ -64,9 +66,33 @@ exports.generateVirtualAccount = async (req, res) => {
             phone: user.phone,
             bvn: user.bvn || undefined
         });
+
+        // If VTStack fails or is not supported (null), try Paystack as backup
+        if (!vtResponse) {
+            vtResponse = await createPaystackVirtualAccount({
+                firstName,
+                lastName,
+                email: user.email,
+                phone: user.phone
+            });
+        }
     } catch (vtErr) {
-        console.warn('VTStack API Failed, falling back to simulated account:', vtErr.message);
-        fallbackUsed = true;
+        console.warn('Virtual Account API Failed, trying alternative:', vtErr.message);
+        
+        // Final attempt with Paystack if VTStack threw an error
+        try {
+            if (!vtResponse) {
+                vtResponse = await createPaystackVirtualAccount({
+                    firstName,
+                    lastName,
+                    email: user.email,
+                    phone: user.phone
+                });
+            }
+        } catch (paystackErr) {
+            console.error('All Virtual Account providers failed');
+            fallbackUsed = true;
+        }
     }
 
     if (!fallbackUsed && vtResponse && vtResponse.status === 'success') {
@@ -100,5 +126,27 @@ exports.generateVirtualAccount = async (req, res) => {
     console.error('Account Generation Error:', err);
     res.status(500).json({ message: err.message });
   }
+};
+
+exports.getBankList = async (req, res) => {
+    try {
+        const banks = await getBanks();
+        res.status(200).json({ success: true, data: banks });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+exports.verifyBankAccount = async (req, res) => {
+    try {
+        const { accountNumber, bankCode } = req.body;
+        if (!accountNumber || !bankCode) {
+            return res.status(400).json({ message: 'Account number and bank code are required' });
+        }
+        const result = await verifyAccount(accountNumber, bankCode);
+        res.status(200).json({ success: true, data: result.data });
+    } catch (err) {
+        res.status(400).json({ message: err.response?.data?.message || 'Verification failed' });
+    }
 };
 

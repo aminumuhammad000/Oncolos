@@ -11,7 +11,7 @@ const signToken = (id) => {
 exports.register = async (req, res) => {
   try {
     const { name, phone, email, password, referralCode } = req.body;
-    const displayName = name || 'User';
+    const displayName = name || phone;
     
     // Auto-generate BVN starting with 22
     const generatedBvn = '22' + Math.floor(100000000 + Math.random() * 900000000);
@@ -43,6 +43,19 @@ exports.register = async (req, res) => {
       bvn: generatedBvn,
       kycStatus: 'pending'
     });
+
+    // Link invited users for dashboard display
+    if (referralCode) {
+      const parent = await User.findOne({ referralCode });
+      if (parent) {
+        parent.invitedUsers.push({
+          phone: newUser.phone,
+          date: new Date().toLocaleDateString(),
+          status: 'Pending' // Will become Active after first investment
+        });
+        await parent.save();
+      }
+    }
 
     const token = signToken(newUser._id);
 

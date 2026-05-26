@@ -65,7 +65,8 @@ const userSchema = new mongoose.Schema({
       type: String,
       amount: Number,
       plan: String,
-      date: String
+      date: String,
+      status: String
     }],
     default: []
   },

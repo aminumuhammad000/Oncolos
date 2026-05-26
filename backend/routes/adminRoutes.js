@@ -11,7 +11,11 @@ const {
   updateUserKYC,
   updateUserBalance
 } = require('../controllers/adminController');
+const { protect, isAdmin } = require('../middleware/authMiddleware');
 const router = express.Router();
+
+router.use(protect);
+router.use(isAdmin);
 
 router.get('/stats', getDashboardStats);
 router.get('/users', getAllUsers);
