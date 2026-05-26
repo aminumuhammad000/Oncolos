@@ -1,7 +1,6 @@
 const User = require('../models/User');
 const Settings = require('../models/Settings');
-const { createVirtualAccount } = require('../utils/vtstack');
-const { createPaystackVirtualAccount, getBanks, verifyAccount } = require('../utils/paystack');
+const { createVirtualAccount, getBanks, verifyBankAccount } = require('../utils/vtstack');
 
 exports.claimDailyBonus = async (req, res) => {
   try {
@@ -117,7 +116,7 @@ exports.verifyBankAccount = async (req, res) => {
         if (!accountNumber || !bankCode) {
             return res.status(400).json({ message: 'Account number and bank code are required' });
         }
-        const result = await verifyAccount(accountNumber, bankCode);
+        const result = await verifyBankAccount(bankCode, accountNumber);
         res.status(200).json({ success: true, data: result.data });
     } catch (err) {
         res.status(400).json({ message: err.response?.data?.message || 'Verification failed' });
@@ -137,6 +136,14 @@ exports.updatePassword = async (req, res) => {
         await user.save();
 
         res.status(200).json({ success: true, message: 'Password updated successfully' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+exports.getBankList = async (req, res) => {
+    try {
+        const banks = await getBanks();
+        res.status(200).json({ success: true, data: banks });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

@@ -78,6 +78,22 @@ exports.createVirtualAccount = async (userData) => {
 };
 
 /**
+ * Get List of Banks from VTStack
+ */
+exports.getBanks = async () => {
+    const apiKey = process.env.VTSTACK_API_KEY;
+    try {
+        const response = await axios.get(`${VTSTACK_BASE_URL}/banks`, {
+            headers: { 'x-api-key': apiKey }
+        });
+        return response.data.data || [];
+    } catch (err) {
+        console.error('VTStack Get Banks Error:', err.message);
+        return [];
+    }
+};
+
+/**
  * Verify Bank Account (Name Enquiry)
  */
 exports.verifyBankAccount = async (bankCode, accountNumber) => {
@@ -89,6 +105,7 @@ exports.verifyBankAccount = async (bankCode, accountNumber) => {
     });
     return response.data;
   } catch (err) {
+    console.error('VTStack Verify Account Error:', err.response?.data || err.message);
     throw err;
   }
 };
