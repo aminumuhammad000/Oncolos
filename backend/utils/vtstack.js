@@ -27,8 +27,9 @@ exports.createVirtualAccount = async (userData) => {
 
     return response.data;
   } catch (err) {
-    console.error('VTStack Create Account Error:', err.response?.data || err.message);
-    throw err;
+    const errorData = err.response?.data || { status: 'error', message: err.message };
+    console.error('VTStack Create Account Error:', errorData);
+    return errorData; // Return error data instead of throwing so controller can handle it gracefully
   }
 };
 

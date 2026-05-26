@@ -67,7 +67,7 @@ exports.generateVirtualAccount = async (req, res) => {
             bvn: user.bvn || undefined
         });
 
-        if (vtResponse && vtResponse.status === 'success') {
+        if (vtResponse && (vtResponse.status === 'success' || vtResponse.status === true)) {
             const { accountNumber, bankName, accountName } = vtResponse.data;
             user.virtualAccount = {
                 number: accountNumber,
@@ -78,7 +78,7 @@ exports.generateVirtualAccount = async (req, res) => {
         } else {
             return res.status(400).json({ 
                 success: false, 
-                message: 'VTStack failed to generate account. Please ensure your API keys and parameters are correct.' 
+                message: vtResponse?.message || 'VTStack could not create account. This might be due to a duplicate reference or invalid BVN.' 
             });
         }
     } catch (vtErr) {
