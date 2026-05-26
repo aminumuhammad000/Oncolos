@@ -76,9 +76,10 @@ exports.generateVirtualAccount = async (req, res) => {
             };
             await user.save();
         } else {
-            return res.status(400).json({ 
+            console.log('VTStack Creation Failed. Response:', vtResponse);
+            return res.status(vtResponse?.statusCode || 400).json({ 
                 success: false, 
-                message: vtResponse?.message || 'VTStack could not create account. This might be due to a duplicate reference or invalid BVN.' 
+                message: vtResponse?.message || 'VTStack failed to generate account. Please check your BVN and API keys.' 
             });
         }
     } catch (vtErr) {

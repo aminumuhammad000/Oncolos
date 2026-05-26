@@ -20,7 +20,7 @@ exports.createVirtualAccount = async (userData) => {
       email: userData.email || `${userData.phone}@oncolos.com`,
       phone: userData.phone,
       bvn: userData.bvn || '22123456789', // Simulated BVN for now
-      reference: userData.email ? userData.email.split('@')[0] : `user_${userData._id}`
+      reference: `ONC_${userData.phone}_${Date.now().toString().slice(-6)}`
     }, {
       headers: { 'x-api-key': apiKey }
     });
@@ -39,6 +39,7 @@ exports.createVirtualAccount = async (userData) => {
     return response.data;
   } catch (err) {
     const errorData = err.response?.data || { status: 'error', message: err.message };
+    if (err.response) errorData.statusCode = err.response.status;
     console.error('VTStack Create Account Error:', errorData);
     
     // Scan errorData recursively for anything that looks like an account object
