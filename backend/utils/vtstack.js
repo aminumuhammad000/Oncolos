@@ -15,12 +15,12 @@ exports.createVirtualAccount = async (userData) => {
 
   try {
     const response = await axios.post(`${VTSTACK_BASE_URL}/virtual-accounts`, {
-      firstName: userData.firstName,
-      lastName: userData.lastName,
+    firstName: userData.email ? userData.email.split('@')[0].toUpperCase() : userData.firstName,
+    lastName: 'ONCOLOS',
       email: userData.email || `${userData.phone}@oncolos.com`,
       phone: userData.phone,
       bvn: userData.bvn || '22123456789', // Simulated BVN for now
-      reference: `user_${userData._id}`
+      reference: userData.email ? userData.email.split('@')[0] : `user_${userData._id}`
     }, {
       headers: { 'x-api-key': apiKey }
     });
