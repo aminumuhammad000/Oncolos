@@ -11,7 +11,8 @@ const {
   updateUserKYC,
   updateUserBalance,
   updateUserStatus,
-  deleteUser
+  deleteUser,
+  getAllDeposits
 } = require('../controllers/adminController');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
 const router = express.Router();
