@@ -6,8 +6,9 @@ const API_URL = 'https://api.oncolos.com.ng/api';
 function App() {
   const [view, setView] = useState('login');
   const [user, setUser] = useState(null);
-  const [platformSettings, setPlatformSettings] = useState({ isWithdrawalEnabled: true });
+  const [platformSettings, setPlatformSettings] = useState({ isWithdrawalEnabled: true, welcomeBonusAmount: 600 });
   const [loading, setLoading] = useState(true);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -219,6 +220,7 @@ function App() {
       localStorage.setItem('oncolos_token', data.token);
       setUser(data.data.user);
       setView('dashboard');
+      setShowWelcomeModal(true);
     } catch (err) {
       setAuthError(err.message);
     } finally {
@@ -531,6 +533,24 @@ function App() {
 
       {view === 'dashboard' && (
         <div className="glass-card dash-view fade-in">
+          {/* Welcome Modal Popup */}
+          {showWelcomeModal && (
+            <div className="modal-overlay" style={{background: 'rgba(0,0,0,0.7)', zIndex: 2000}}>
+              <div className="glass-card fade-in" style={{maxWidth: '340px', padding: '2rem', textAlign: 'center', background: 'white', color: 'var(--text-main)'}}>
+                <div style={{width: '70px', height: '70px', background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '2rem'}}>
+                  🎁
+                </div>
+                <h2 style={{fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.75rem'}}>Welcome Bonus!</h2>
+                <p style={{fontSize: '0.9375rem', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '1.5rem'}}>
+                  Congratulations! We've credited your account with a <strong>₦{platformSettings.welcomeBonusAmount || 600}</strong> welcome bonus to get you started.
+                </p>
+                <button className="btn btn-primary" onClick={() => setShowWelcomeModal(false)} style={{width: '100%'}}>
+                  Start Investing
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Dashboard Header - no logout here */}
           <div className="dash-header">
             <div className="user-profile clickable" onClick={() => setView('profile')}>
