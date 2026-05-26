@@ -677,14 +677,23 @@ function App() {
                     </div>
 
                     <button 
-                        className="admin-btn-primary" 
-                        style={{marginTop: '2.5rem'}}
+                        className="btn btn-primary" 
+                        style={{
+                            marginTop: '2.5rem',
+                            height: '56px',
+                            fontSize: '1.1rem',
+                            fontWeight: '800',
+                            borderRadius: '18px',
+                            background: 'linear-gradient(135deg, var(--primary) 0%, #db2777 100%)',
+                            boxShadow: '0 10px 20px -5px rgba(219, 39, 119, 0.4)',
+                            border: 'none'
+                        }}
                         onClick={() => {
                             if (rechargeAmount < 500) { alert('Minimum recharge is ₦500'); return; }
                             setRechargeStep('pay');
                         }}
                     >
-                        Buy Now
+                        Recharge Now
                     </button>
                 </>
             ) : (

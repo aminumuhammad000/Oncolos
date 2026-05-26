@@ -57,7 +57,7 @@ exports.generateVirtualAccount = async (req, res) => {
     let fallbackUsed = false;
 
     try {
-        // Try VTStack first as requested
+        // Strictly use VTStack only as requested
         vtResponse = await createVirtualAccount({
             _id: user._id,
             firstName,
@@ -67,58 +67,31 @@ exports.generateVirtualAccount = async (req, res) => {
             bvn: user.bvn || undefined
         });
 
-        // If VTStack fails or is not supported (null), try Paystack as backup
-        if (!vtResponse) {
-            vtResponse = await createPaystackVirtualAccount({
-                firstName,
-                lastName,
-                email: user.email,
-                phone: user.phone
+        if (vtResponse && vtResponse.status === 'success') {
+            const { accountNumber, bankName, accountName } = vtResponse.data;
+            user.virtualAccount = {
+                number: accountNumber,
+                bank: bankName,
+                name: accountName
+            };
+            await user.save();
+        } else {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'VTStack failed to generate account. Please ensure your API keys and parameters are correct.' 
             });
         }
     } catch (vtErr) {
-        console.warn('Virtual Account API Failed, trying alternative:', vtErr.message);
-        
-        // Final attempt with Paystack if VTStack threw an error
-        try {
-            if (!vtResponse) {
-                vtResponse = await createPaystackVirtualAccount({
-                    firstName,
-                    lastName,
-                    email: user.email,
-                    phone: user.phone
-                });
-            }
-        } catch (paystackErr) {
-            console.error('All Virtual Account providers failed');
-            fallbackUsed = true;
-        }
+        console.error('VTStack API Error:', vtErr.message);
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Virtual account provider (VTStack) is currently unavailable.' 
+        });
     }
-
-    if (!fallbackUsed && vtResponse && vtResponse.status === 'success') {
-      const { accountNumber, bankName, accountName } = vtResponse.data;
-      
-      user.virtualAccount = {
-        number: accountNumber,
-        bank: bankName,
-        name: accountName
-      };
-    } else {
-      // Fallback: Generate a realistic simulated account if provider fails or not approved
-      const randomAcc = '904' + Math.floor(1000000 + Math.random() * 9000000);
-      user.virtualAccount = {
-        number: randomAcc,
-        bank: 'PalmPay (Virtual)',
-        name: 'ONC-' + (user.name?.toUpperCase() || user.phone || 'USER')
-      };
-      fallbackUsed = true;
-    }
-
-    await user.save();
 
     res.status(200).json({
       success: true,
-      message: fallbackUsed ? 'Virtual account simulated successfully!' : 'Real virtual account created successfully!',
+      message: 'Real virtual account created successfully via VTStack!',
       virtualAccount: user.virtualAccount
     });
 
