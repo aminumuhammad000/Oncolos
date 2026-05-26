@@ -117,9 +117,17 @@ exports.verifyBankAccount = async (req, res) => {
             return res.status(400).json({ message: 'Account number and bank code are required' });
         }
         const result = await verifyBankAccount(bankCode, accountNumber);
-        res.status(200).json({ success: true, data: result.data });
+        // Normalize the response - VTStack may return accountName or account_name
+        const rawData = result.data || result;
+        const normalized = {
+            accountName: rawData.accountName || rawData.account_name || rawData.name || '',
+            accountNumber: rawData.accountNumber || rawData.account_number || accountNumber,
+            bankName: rawData.bankName || rawData.bank_name || ''
+        };
+        res.status(200).json({ success: true, data: normalized });
     } catch (err) {
-        res.status(400).json({ message: err.response?.data?.message || 'Verification failed' });
+        console.error('Verify Account Error:', err.response?.data || err.message);
+        res.status(400).json({ message: err.response?.data?.message || 'Account verification failed. Please check the account number and bank.' });
     }
 };
 

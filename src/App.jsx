@@ -70,7 +70,8 @@ function App() {
         });
         const data = await res.json();
         if (res.ok) {
-          setWithdrawForm(prev => ({ ...prev, isResolving: false, resolvedName: data.data.account_name }));
+          const accName = data.data?.accountName || data.data?.account_name || '';
+          setWithdrawForm(prev => ({ ...prev, isResolving: false, resolvedName: accName }));
         } else {
           setWithdrawForm(prev => ({ ...prev, isResolving: false, resolvedName: '' }));
         }
@@ -1130,7 +1131,8 @@ function App() {
                   style={{width: '100%', padding: '0.875rem 1rem', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '1rem', background: 'white', color: 'var(--text-main)', appearance: 'none'}}
                 >
                   <option value="">-- Choose your bank --</option>
-                  {realBanks.map(bank => <option key={bank.code} value={bank.code}>{bank.name}</option>)}
+                  {realBanks.filter((bank, idx, arr) => arr.findIndex(b => b.code === bank.code) === idx)
+                    .map((bank, idx) => <option key={`${bank.code}_${idx}`} value={bank.code}>{bank.name}</option>)}
                 </select>
               </div>
 
