@@ -16,6 +16,8 @@ const {
 const { protect, isAdmin } = require('../middleware/authMiddleware');
 const router = express.Router();
 
+router.get('/settings/public', getSettings);
+
 router.use(protect);
 router.use(isAdmin);
 

@@ -150,16 +150,16 @@ export default function AdminApp() {
     }
   };
 
-  const handleToggleBonus = async (value) => {
+  const handleUpdateSetting = async (key, value) => {
     try {
-      setPlatformSettings({ ...platformSettings, isDailyBonusEnabled: value });
+      setPlatformSettings({ ...platformSettings, [key]: value });
       await fetch(`${API_BASE}/settings`, {
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('oncolos_admin_token')}`
         },
-        body: JSON.stringify({ key: 'isDailyBonusEnabled', value })
+        body: JSON.stringify({ key, value })
       });
     } catch (err) {
       console.error('Failed to update setting:', err);
@@ -276,7 +276,8 @@ export default function AdminApp() {
     { id: 'investments', label: 'Investments',   icon: TrendingUp },
     { id: 'referrals',  label: 'Referrals',     icon: ChevronRight },
     { id: 'withdrawals', label: 'Withdrawals',   icon: ArrowDownCircle },
-    { id: 'settings',   label: 'Settings',      icon: Settings },
+    { id: 'payments',    label: 'Payments',      icon: CreditCard },
+    { id: 'settings',    label: 'Settings',      icon: Settings },
   ];
 
   const handleAdminLogin = async (e) => {
@@ -579,17 +580,15 @@ export default function AdminApp() {
             </div>
           )}
 
-          {/* ── Settings / Payment Gateway ── */}
-          {section === 'settings' && (
+          {/* ── Payments Section ── */}
+          {section === 'payments' && (
             <div>
-              <h1 className="page-title">Settings</h1>
-
+              <h1 className="page-title">Payment Gateway Settings</h1>
               <div className="settings-grid">
-                {/* Payment Gateway */}
                 <div className="admin-card">
                   <div className="card-title-row">
                     <Key size={18} color="#2563eb" />
-                    <h3 className="card-title">Payment Gateway</h3>
+                    <h3 className="card-title">VTStack Config</h3>
                   </div>
                   <p className="muted" style={{marginBottom:'1.5rem'}}>Configure your payment provider to enable wallet funding and withdrawals.</p>
 
@@ -658,7 +657,15 @@ export default function AdminApp() {
                     Save Payment Settings
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
 
+          {/* ── Settings Section ── */}
+          {section === 'settings' && (
+            <div>
+              <h1 className="page-title">Platform Settings</h1>
+              <div className="settings-grid">
                 {/* Email Settings */}
                 <div className="admin-card">
                   <div className="card-title-row">
@@ -712,9 +719,63 @@ export default function AdminApp() {
                       type="checkbox" 
                       className="toggle-checkbox" 
                       checked={platformSettings.isDailyBonusEnabled}
-                      onChange={(e) => handleToggleBonus(e.target.checked)}
+                      onChange={(e) => handleUpdateSetting('isDailyBonusEnabled', e.target.checked)}
                     />
                   </label>
+
+                  <label className="toggle-row" style={{marginTop:'1.5rem'}}>
+                    <div style={{display:'flex', alignItems:'center', gap:'0.75rem'}}>
+                       <Gift size={18} color={platformSettings.isWelcomeBonusEnabled ? '#16a34a' : '#64748b'} />
+                       <span>New User Welcome Bonus</span>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      className="toggle-checkbox" 
+                      checked={platformSettings.isWelcomeBonusEnabled}
+                      onChange={(e) => handleUpdateSetting('isWelcomeBonusEnabled', e.target.checked)}
+                    />
+                  </label>
+
+                  {platformSettings.isWelcomeBonusEnabled && (
+                    <div className="form-group" style={{marginTop:'1rem', paddingLeft: '2.5rem'}}>
+                      <label>Welcome Bonus Amount (₦)</label>
+                      <input 
+                        type="number" 
+                        value={platformSettings.welcomeBonusAmount || 600}
+                        onChange={(e) => handleUpdateSetting('welcomeBonusAmount', Number(e.target.value))}
+                        placeholder="600"
+                      />
+                    </div>
+                  )}
+
+                  <hr style={{margin: '1.5rem 0', border: 'none', borderTop: '1px solid #eee'}} />
+
+                  <label className="toggle-row">
+                    <div style={{display:'flex', alignItems:'center', gap:'0.75rem'}}>
+                       <ArrowDownCircle size={18} color={platformSettings.isWithdrawalEnabled ? '#ef4444' : '#64748b'} />
+                       <span>Enable Withdrawals</span>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      className="toggle-checkbox" 
+                      checked={platformSettings.isWithdrawalEnabled}
+                      onChange={(e) => handleUpdateSetting('isWithdrawalEnabled', e.target.checked)}
+                    />
+                  </label>
+                  <p className="muted" style={{fontSize: '0.75rem', marginTop: '0.5rem', paddingLeft: '2.5rem'}}>
+                    If disabled, users will see a "Withdrawals Closed" message.
+                  </p>
+
+                  <div className="form-group" style={{marginTop: '1.5rem', paddingLeft: '2.5rem'}}>
+                    <label>Withdrawal Fee (₦)</label>
+                    <input 
+                      type="number" 
+                      value={platformSettings.withdrawalFee || 50}
+                      onChange={(e) => handleUpdateSetting('withdrawalFee', Number(e.target.value))}
+                      placeholder="50"
+                    />
+                    <p className="muted" style={{fontSize: '0.7rem', marginTop: '0.25rem'}}>Flat fee charged per withdrawal transaction.</p>
+                  </div>
                 </div>
               </div>
             </div>

@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Settings = require('../models/Settings');
 const jwt = require('jsonwebtoken');
 const { createVirtualAccount } = require('../utils/vtstack');
 
@@ -30,6 +31,13 @@ exports.register = async (req, res) => {
     // Generate unique referral code for new user
     const userReferralCode = 'ONC' + Math.floor(1000 + Math.random() * 9000);
 
+    // Fetch settings for welcome bonus
+    const settingsList = await Settings.find();
+    const settings = { isWelcomeBonusEnabled: true, welcomeBonusAmount: 600 };
+    settingsList.forEach(s => settings[s.key] = s.value);
+    
+    const startBalance = settings.isWelcomeBonusEnabled ? settings.welcomeBonusAmount : 0;
+
     const newUser = await User.create({
       name: displayName,
       phone,
@@ -37,11 +45,17 @@ exports.register = async (req, res) => {
       password,
       referralCode: userReferralCode,
       referredBy: referralCode || null,
-      balance: 0,
+      balance: startBalance,
       withdrawBalance: 0,
       virtualAccount: null,
       bvn: generatedBvn,
-      kycStatus: 'pending'
+      kycStatus: 'unverified',
+      messages: [{
+        title: 'Welcome to Oncolos!',
+        content: settings.isWelcomeBonusEnabled 
+          ? `Welcome ${displayName}! You have received a welcome bonus of ₦${settings.welcomeBonusAmount} in your wallet.`
+          : `Welcome ${displayName}! We are glad to have you on board.`
+      }]
     });
 
     // Link invited users for dashboard display

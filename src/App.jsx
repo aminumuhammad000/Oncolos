@@ -1,10 +1,24 @@
 import { useState, useEffect } from 'react'
-import { Home, TrendingUp, Users, User, ArrowLeft, LogOut, Copy, Gift, Shield, Eye, EyeOff, Rocket, Wallet, CreditCard, Clock, Check, ArrowDownCircle, BarChart2, X, PlusCircle, ChevronRight, MessageSquare, Headset, Send } from 'lucide-react'
+import { Home, TrendingUp, Users, User, ArrowLeft, LogOut, Copy, Gift, Shield, Eye, EyeOff, Rocket, Wallet, CreditCard, Clock, Check, ArrowDownCircle, BarChart2, X, PlusCircle, ChevronRight, MessageSquare, Headset, Send, Bell } from 'lucide-react'
 
 function App() {
   const [view, setView] = useState('login');
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [platformSettings, setPlatformSettings] = useState({ isWithdrawalEnabled: true });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`https://api.oncolos.com.ng/api/admin/settings/public`);
+        const data = await res.json();
+        if (res.ok) setPlatformSettings(data);
+      } catch (err) {
+        console.error('Failed to fetch platform settings');
+      }
+    };
+    fetchSettings();
+  }, []);
   const [authError, setAuthError] = useState('');
   const [resetEmail, setResetEmail] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -83,30 +97,55 @@ function App() {
     }
   };
 
-  const handleWithdrawSubmit = (e) => {
+  const handleWithdrawSubmit = async (e) => {
     e.preventDefault();
+    if (!platformSettings.isWithdrawalEnabled) {
+      setErrorAlert({ title: 'Withdrawals Closed', message: 'Withdrawals are currently closed by the administrator. Please try again later.' });
+      return;
+    }
     if (!withdrawForm.resolvedName) { 
         setErrorAlert({ title: 'Invalid Account', message: 'Please enter a valid 10-digit account number that can be verified.' });
         return; 
     }
-    if (parseFloat(withdrawForm.amount) < 600) { 
+    const amount = parseFloat(withdrawForm.amount);
+    if (amount < 600) { 
         setErrorAlert({ title: 'Minimum Amount', message: 'Minimum withdrawal is ₦600.' });
         return; 
     }
-    if (parseFloat(withdrawForm.amount) > (user?.balance || 0)) { 
+    if (amount > (user?.balance || 0)) { 
         setErrorAlert({ title: 'Insufficient Funds', message: 'You do not have enough balance for this withdrawal.' });
         return; 
     }
-    
+
     const bankName = realBanks.find(b => b.code === withdrawForm.bank)?.name || 'the selected bank';
-    
-    setSuccessAlert({ 
-        title: 'Transaction Submitted!', 
-        message: `Your withdrawal of ₦${parseFloat(withdrawForm.amount).toLocaleString()} to ${withdrawForm.resolvedName} (${bankName}) is being processed. It will arrive shortly.` 
-    });
-    
-    setWithdrawForm({ bank: '', accountNumber: '', resolvedName: '', amount: '', isResolving: false });
-    setView('dashboard');
+
+    try {
+        const res = await fetch(`${API_URL}/users/request-withdrawal`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('oncolos_token')}`
+            },
+            body: JSON.stringify({
+                amount: amount,
+                bank: bankName,
+                accountNumber: withdrawForm.accountNumber,
+                accountName: withdrawForm.resolvedName
+            })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+
+        setUser(prev => ({ ...prev, balance: data.newBalance }));
+        setSuccessAlert({ 
+            title: 'Transaction Submitted!', 
+            message: `Your withdrawal of ₦${amount.toLocaleString()} is being processed. It will arrive shortly.` 
+        });
+        setWithdrawForm({ bank: '', accountNumber: '', resolvedName: '', amount: '', isResolving: false });
+        setView('dashboard');
+    } catch (err) {
+        setErrorAlert({ title: 'Withdrawal Failed', message: err.message });
+    }
   };
 
   const plans = [
@@ -251,6 +290,24 @@ function App() {
       setSuccessAlert({ title: 'Bonus Claimed!', message: data.message });
     } catch (err) {
       alert(err.message);
+    }
+  };
+  
+  const markMessagesAsRead = async () => {
+    if (!user?.messages || user.messages.every(m => m.read)) return;
+    try {
+      await fetch(`${API_URL}/users/read-messages`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${localStorage.getItem('oncolos_token')}`
+        }
+      });
+      setUser(prev => ({
+        ...prev,
+        messages: prev.messages.map(m => ({ ...m, read: true }))
+      }));
+    } catch (err) {
+      console.error('Failed to mark messages as read');
     }
   };
 
@@ -477,6 +534,37 @@ function App() {
                 <p style={{fontSize: '0.8rem', opacity: 0.7}}>Member | {user?.phone}</p>
               </div>
             </div>
+            <button 
+              className="notification-btn" 
+              onClick={() => setView('messages')}
+              style={{
+                position: 'relative',
+                background: 'rgba(255,255,255,0.1)',
+                border: 'none',
+                color: 'white',
+                padding: '0.6rem',
+                borderRadius: '12px',
+                cursor: 'pointer'
+              }}
+            >
+              <Bell size={20} />
+              {(user?.messages || []).filter(m => !m.read).length > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-4px',
+                  right: '-4px',
+                  background: '#ef4444',
+                  color: 'white',
+                  fontSize: '0.65rem',
+                  padding: '2px 6px',
+                  borderRadius: '10px',
+                  fontWeight: '700',
+                  border: '2px solid var(--primary-dark)'
+                }}>
+                  {(user?.messages || []).filter(m => !m.read).length}
+                </span>
+              )}
+            </button>
           </div>
 
           <div className="balance-card">
@@ -1100,83 +1188,157 @@ function App() {
         </div>
       )}
 
+      {view === 'messages' && (
+        <div className="glass-card dash-view fade-in">
+          <div className="profile-nav">
+             <button className="back-btn" onClick={() => { setView('dashboard'); markMessagesAsRead(); }}>
+               <ArrowLeft size={20} /> Back
+             </button>
+          </div>
+          <div style={{padding: '0 0.5rem'}}>
+            <h1 style={{fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.25rem'}}>Notifications</h1>
+            <p style={{color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem'}}>Updates and alerts for your account</p>
+
+            <div className="messages-list" style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+              {(user?.messages || []).length > 0 ? (
+                [...user.messages].reverse().map((msg, i) => (
+                  <div key={i} className="message-item" style={{
+                    background: 'white',
+                    padding: '1.25rem',
+                    borderRadius: '20px',
+                    border: '1px solid var(--border)',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}>
+                    {!msg.read && <div style={{position: 'absolute', top: '1.25rem', right: '1.25rem', width: '8px', height: '8px', background: '#ef4444', borderRadius: '50%'}}></div>}
+                    <div style={{display: 'flex', gap: '1rem'}}>
+                      <div style={{
+                        background: 'var(--primary-light)',
+                        color: 'var(--primary)',
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <Bell size={20} />
+                      </div>
+                      <div style={{flex: 1}}>
+                        <h4 style={{fontSize: '1rem', fontWeight: '700', marginBottom: '0.25rem', paddingRight: '1rem'}}>{msg.title}</h4>
+                        <p style={{fontSize: '0.875rem', color: 'var(--text-main)', lineHeight: '1.5', marginBottom: '0.5rem'}}>{msg.content}</p>
+                        <p style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>{new Date(msg.date).toLocaleDateString()} at {new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-state" style={{padding: '3rem 1rem', textAlign: 'center', color: 'var(--text-muted)'}}>
+                  <div style={{fontSize: '3rem', marginBottom: '1rem'}}>🔔</div>
+                  <p>You have no notifications yet.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Withdraw Page */}
       {view === 'withdraw' && (
         <div className="glass-card dash-view fade-in">
           <div className="profile-nav">
-            <button className="back-btn" onClick={() => setView('dashboard')}>
-              <ArrowLeft size={20} /> Back
-            </button>
+             <button className="back-btn" onClick={() => setView('dashboard')}>
+               <ArrowLeft size={20} /> Back
+             </button>
           </div>
-          <div style={{padding: '0 0.5rem'}}>
-            <h1 style={{fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.25rem'}}>Withdraw Funds</h1>
-            <p style={{color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem'}}>Transfer earnings to your bank account</p>
-
-            <div className="balance-card" style={{marginBottom: '1.5rem'}}>
-              <p className="balance-label">Available Balance</p>
-              <p className="balance-amount">₦{(user?.balance || 0).toLocaleString()}</p>
+          
+          {!platformSettings.isWithdrawalEnabled ? (
+            <div style={{padding: '2rem 1rem', textAlign: 'center'}}>
+              <div style={{fontSize: '3rem', marginBottom: '1rem'}}>🔒</div>
+              <h2 style={{fontSize: '1.25rem', fontWeight: '800', marginBottom: '0.5rem'}}>Withdrawals Closed</h2>
+              <p style={{color: 'var(--text-muted)', fontSize: '0.9375rem', lineHeight: '1.6'}}>
+                Withdrawals are temporarily closed by the administrator. Please check back later.
+              </p>
+              <button className="btn btn-primary" style={{marginTop: '2rem'}} onClick={() => setView('dashboard')}>Return Home</button>
             </div>
+          ) : (
+            <div style={{padding: '0 0.5rem'}}>
+              <h1 style={{fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.25rem'}}>Withdraw Funds</h1>
+              <p style={{color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem'}}>Minimum amount: ₦600</p>
 
-            <form onSubmit={handleWithdrawSubmit}>
-              <div className="form-group">
-                <label>Select Bank</label>
-                <select 
-                  value={withdrawForm.bank}
-                  onChange={(e) => {
-                    const bankCode = e.target.value;
-                    setWithdrawForm(prev => ({ ...prev, bank: bankCode }));
-                    handleNameLookup(withdrawForm.accountNumber, bankCode);
-                  }}
-                  required
-                  style={{width: '100%', padding: '0.875rem 1rem', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '1rem', background: 'white', color: 'var(--text-main)', appearance: 'none'}}
-                >
-                  <option value="">-- Choose your bank --</option>
-                  {realBanks.filter((bank, idx, arr) => arr.findIndex(b => b.code === bank.code) === idx)
-                    .map((bank, idx) => <option key={`${bank.code}_${idx}`} value={bank.code}>{bank.name}</option>)}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Account Number</label>
-                <input 
-                  type="number" 
-                  placeholder="10-digit account number"
-                  value={withdrawForm.accountNumber}
-                  onChange={(e) => {
-                    const accountNumber = e.target.value.slice(0, 10);
-                    setWithdrawForm(prev => ({ ...prev, accountNumber }));
-                    handleNameLookup(accountNumber, withdrawForm.bank);
-                  }}
-                  required
-                />
-              </div>
-
-              {/* Auto-resolved account name */}
-              {withdrawForm.isResolving && (
-                <div className="name-resolve-box resolving">Verifying account...</div>
-              )}
-              {withdrawForm.resolvedName && !withdrawForm.isResolving && (
-                <div className="name-resolve-box resolved">
-                  <Check size={16} /> {withdrawForm.resolvedName}
+              <form onSubmit={handleWithdrawSubmit}>
+                <div className="form-group">
+                  <label>Select Your Bank</label>
+                  <select 
+                    value={withdrawForm.bank} 
+                    onChange={e => {
+                      const bankCode = e.target.value;
+                      setWithdrawForm(prev => ({ ...prev, bank: bankCode, resolvedName: '' }));
+                      handleNameLookup(withdrawForm.accountNumber, bankCode);
+                    }}
+                    style={{width: '100%', padding: '0.875rem 1rem', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '1rem', background: 'white', color: 'var(--text-main)', appearance: 'none', outline: 'none'}}
+                  >
+                    <option value="">-- Choose Bank --</option>
+                    {realBanks.filter((bank, idx, arr) => arr.findIndex(b => b.code === bank.code) === idx)
+                      .map((bank, idx) => <option key={`${bank.code}_${idx}`} value={bank.code}>{bank.name}</option>)}
+                  </select>
                 </div>
-              )}
 
-              <div className="form-group" style={{marginTop: '1rem'}}>
-                <label>Amount (min ₦600)</label>
-                <input 
-                  type="number" 
-                  placeholder="Enter amount"
-                  value={withdrawForm.amount}
-                  onChange={(e) => setWithdrawForm(prev => ({ ...prev, amount: e.target.value }))}
-                  required
-                />
-              </div>
+                <div className="form-group">
+                  <label>10-Digit Account Number</label>
+                  <input 
+                    type="number" 
+                    placeholder="Enter account number"
+                    value={withdrawForm.accountNumber}
+                    onChange={(e) => {
+                      const accountNumber = e.target.value.slice(0, 10);
+                      setWithdrawForm(prev => ({ ...prev, accountNumber }));
+                      handleNameLookup(accountNumber, withdrawForm.bank);
+                    }}
+                  />
+                  {withdrawForm.isResolving && <p style={{fontSize: '0.75rem', color: 'var(--primary)', marginTop: '0.25rem'}}>Verifying account...</p>}
+                  {withdrawForm.resolvedName && (
+                    <div style={{marginTop: '0.5rem', padding: '0.75rem', background: '#f0fdf4', border: '1px solid #bcf0da', borderRadius: '8px', color: '#166534', fontSize: '0.875rem', fontWeight: '700'}}>
+                      Recipient: {withdrawForm.resolvedName}
+                    </div>
+                  )}
+                </div>
 
-              <button type="submit" className="btn btn-primary" style={{marginTop: '1.5rem'}}>
-                <ArrowDownCircle size={18} /> Submit Withdrawal
-              </button>
-            </form>
-          </div>
+                <div className="form-group" style={{marginTop: '1rem'}}>
+                  <label>Withdrawal Amount (₦)</label>
+                  <input 
+                    type="number" 
+                    placeholder="e.g. 5000"
+                    value={withdrawForm.amount}
+                    onChange={(e) => setWithdrawForm(prev => ({ ...prev, amount: e.target.value }))}
+                  />
+                  <div style={{marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem'}}>
+                     <p style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>
+                       Available: ₦{(user?.balance || 0).toLocaleString()}
+                     </p>
+                     <p style={{fontSize: '0.75rem', color: 'var(--error)', fontWeight: '600'}}>
+                       Service Fee: ₦{(platformSettings.withdrawalFee || 50).toLocaleString()}
+                     </p>
+                     {withdrawForm.amount && parseFloat(withdrawForm.amount) >= 600 && (
+                       <p style={{fontSize: '0.8125rem', color: 'var(--primary)', fontWeight: '700', padding: '0.5rem', background: 'rgba(37, 99, 235, 0.05)', borderRadius: '8px'}}>
+                         You will receive: ₦{(parseFloat(withdrawForm.amount) - (platformSettings.withdrawalFee || 50)).toLocaleString()}
+                       </p>
+                     )}
+                  </div>
+                </div>
+
+                <button 
+                  type="submit" 
+                  className="btn btn-primary" 
+                  style={{marginTop: '1.5rem'}}
+                  disabled={!withdrawForm.resolvedName || withdrawForm.isResolving || !withdrawForm.amount || parseFloat(withdrawForm.amount) < 600}
+                >
+                  Confirm Withdrawal
+                </button>
+              </form>
+            </div>
+          )}
         </div>
       )}
 

@@ -94,6 +94,15 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['unverified', 'pending', 'verified'],
     default: 'unverified'
+  },
+  messages: {
+    type: [{
+      title: String,
+      content: String,
+      date: { type: Date, default: Date.now },
+      read: { type: Boolean, default: false }
+    }],
+    default: []
   }
 }, { timestamps: true });
 

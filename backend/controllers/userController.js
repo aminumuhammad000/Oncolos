@@ -148,10 +148,64 @@ exports.updatePassword = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
-exports.getBankList = async (req, res) => {
+exports.requestWithdrawal = async (req, res) => {
     try {
-        const banks = await getBanks();
-        res.status(200).json({ success: true, data: banks });
+        const { amount, bank, accountNumber, accountName } = req.body;
+        
+        // 1. Check if withdrawals are enabled globally
+        const withdrawalSetting = await Settings.findOne({ key: 'isWithdrawalEnabled' });
+        if (withdrawalSetting && withdrawalSetting.value === false) {
+            return res.status(403).json({ message: 'Withdrawals are currently closed by the administrator. Please try again later.' });
+        }
+
+        const feeSetting = await Settings.findOne({ key: 'withdrawalFee' });
+        const fee = feeSetting ? Number(feeSetting.value) : 50;
+
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (user.balance < amount) {
+            return res.status(400).json({ message: 'Insufficient balance' });
+        }
+
+        if (amount < 600) {
+            return res.status(400).json({ message: 'Minimum withdrawal is ₦600' });
+        }
+
+        // 2. Deduct balance and create withdrawal record
+        user.balance -= amount;
+        await user.save();
+
+        const withdrawal = await require('../models/Withdrawal').create({
+            user: user._id,
+            amount,
+            fee,
+            bank,
+            accountNumber,
+            accountName,
+            status: 'Pending'
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Withdrawal request submitted successfully',
+            withdrawal,
+            newBalance: user.balance
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+exports.readMessages = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        
+        user.messages.forEach(m => m.read = true);
+        await user.save();
+        
+        res.status(200).json({ success: true, message: 'Messages marked as read' });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

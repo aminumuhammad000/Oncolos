@@ -59,7 +59,13 @@ exports.getSettings = async (req, res) => {
   try {
     const settings = await Settings.find();
     // Default values if not in DB
-    const defaults = { isDailyBonusEnabled: true };
+    const defaults = { 
+      isDailyBonusEnabled: true,
+      isWelcomeBonusEnabled: true,
+      welcomeBonusAmount: 600,
+      isWithdrawalEnabled: true,
+      withdrawalFee: 50
+    };
     const result = { ...defaults };
     settings.forEach(s => result[s.key] = s.value);
     
