@@ -56,6 +56,7 @@ exports.createVirtualAccount = async (userData) => {
     const existingAcc = findAcc(errorData);
     
     if (existingAcc) {
+       console.log('Successfully recovered account from error response:', existingAcc);
        return {
          status: 'success',
          data: {
@@ -65,6 +66,12 @@ exports.createVirtualAccount = async (userData) => {
          }
        };
     }
+    
+    // Final fallback: if the message says "successfully created", try one last time to flag success
+    if (errorData.message && errorData.message.toLowerCase().includes('successfully created')) {
+        return { status: 'success', data: errorData.data || {} };
+    }
+
     return errorData;
   }
 };
