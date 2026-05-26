@@ -25,11 +25,36 @@ exports.createVirtualAccount = async (userData) => {
       headers: { 'x-api-key': apiKey }
     });
 
+    if (response.data.status === 'success' || response.data.status === true) {
+      const acc = response.data.data;
+      return {
+        status: 'success',
+        data: {
+          accountNumber: acc.account_number || acc.accountNumber,
+          bankName: acc.bank_name || acc.bankName || 'VTStack Bank',
+          accountName: acc.account_name || acc.accountName
+        }
+      };
+    }
     return response.data;
   } catch (err) {
     const errorData = err.response?.data || { status: 'error', message: err.message };
     console.error('VTStack Create Account Error:', errorData);
-    return errorData; // Return error data instead of throwing so controller can handle it gracefully
+    
+    // If it's a 400 error but the message sounds like success or "already exists",
+    // we should still try to return it if it has data
+    if (errorData.data && (errorData.data.account_number || errorData.data.accountNumber)) {
+       const acc = errorData.data;
+       return {
+         status: 'success',
+         data: {
+           accountNumber: acc.account_number || acc.accountNumber,
+           bankName: acc.bank_name || acc.bankName || 'VTStack Bank',
+           accountName: acc.account_name || acc.accountName
+         }
+       };
+    }
+    return errorData;
   }
 };
 
