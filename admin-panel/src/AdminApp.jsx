@@ -54,6 +54,9 @@ export default function AdminApp() {
   const [withdrawals, setWithdrawals] = useState([]);
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+  const [balanceModal, setBalanceModal] = useState(null); // { userId, userName, action: 'add'|'deduct' }
+  const [balanceAmount, setBalanceAmount] = useState('');
+  const [balanceLoading, setBalanceLoading] = useState(false);
 
   const [stats, setStats] = useState({ totalUsers: 0, activeInvestments: 0, totalBalance: 0, pendingWithdrawals: 0 });
   const [users, setUsers] = useState([]);
@@ -185,29 +188,41 @@ export default function AdminApp() {
     }
   };
 
-  const handleAdjustBalance = async (userId) => {
-    const amount = prompt('Enter amount:');
-    const action = prompt('Action (add/deduct):');
-    if (!amount || !['add', 'deduct'].includes(action)) return;
+  const handleAdjustBalance = (userId, userName) => {
+    setBalanceAmount('');
+    setBalanceModal({ userId, userName, action: 'add' });
+  };
 
+  const submitBalanceUpdate = async () => {
+    if (!balanceAmount || isNaN(balanceAmount) || Number(balanceAmount) <= 0) {
+      alert('Please enter a valid amount.');
+      return;
+    }
+    setBalanceLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/users/${userId}/balance`, {
+      const res = await fetch(`${API_BASE}/users/${balanceModal.userId}/balance`, {
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('oncolos_admin_token')}`
         },
-        body: JSON.stringify({ amount, action })
+        body: JSON.stringify({ amount: Number(balanceAmount), action: balanceModal.action })
       });
       const data = await res.json();
       if (data.success) {
-        setUsers(prev => prev.map(u => u._id === userId ? { ...u, balance: data.newBalance } : u));
+        setUsers(prev => prev.map(u => u._id === balanceModal.userId ? { ...u, balance: data.newBalance } : u));
         setSelectedUser(prev => prev ? { ...prev, balance: data.newBalance } : null);
-        alert('Balance updated!');
+        setBalanceModal(null);
+        setBalanceAmount('');
+        alert(`✅ Wallet ${balanceModal.action === 'add' ? 'credited' : 'debited'} successfully! New balance: ₦${data.newBalance.toLocaleString()}`);
+      } else {
+        alert(data.message || 'Failed to update balance');
       }
     } catch (err) {
       console.error('Failed to update balance:', err);
       alert('Error updating balance');
+    } finally {
+      setBalanceLoading(false);
     }
   };
 
@@ -689,7 +704,8 @@ export default function AdminApp() {
               </div>
               <div className="modal-actions-admin">
                  <button className="admin-btn-secondary" onClick={() => handleUpdateKYC(selectedUser._id, 'verified')}>Approve KYC</button>
-                 <button className="admin-btn-primary" onClick={() => handleAdjustBalance(selectedUser._id)}>Adjust Balance</button>
+                 <button className="admin-btn-primary" style={{background: '#16a34a'}} onClick={() => handleAdjustBalance(selectedUser._id, selectedUser.name || selectedUser.phone)}>💳 Credit Wallet</button>
+                 <button className="admin-btn-primary" style={{background: '#dc2626'}} onClick={() => { setBalanceModal({ userId: selectedUser._id, userName: selectedUser.name || selectedUser.phone, action: 'deduct' }); setBalanceAmount(''); }}>Deduct Wallet</button>
               </div>
             </div>
           </div>
@@ -718,6 +734,54 @@ export default function AdminApp() {
               </div>
               <div className="modal-actions-admin">
                  <button className="admin-btn-primary" onClick={() => setSelectedInvestment(null)}>Close View</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}\n
+      {/* ── Credit/Deduct Wallet Modal ── */}
+      {balanceModal && (
+        <div className="admin-modal-overlay" onClick={() => setBalanceModal(null)}>
+          <div className="admin-modal" onClick={e => e.stopPropagation()} style={{maxWidth: '400px'}}>
+            <div className="modal-header">
+              <h2>{balanceModal.action === 'add' ? '💳 Credit Wallet' : '💸 Deduct Wallet'}</h2>
+              <button className="close-btn" onClick={() => setBalanceModal(null)}>×</button>
+            </div>
+            <div className="modal-body-content">
+              <div className="detail-section">
+                <p style={{marginBottom: '1rem', color: '#64748b'}}>User: <strong>{balanceModal.userName}</strong></p>
+                <div style={{display: 'flex', gap: '0.5rem', marginBottom: '1.25rem'}}>
+                  <button 
+                    onClick={() => setBalanceModal(prev => ({...prev, action: 'add'}))}
+                    style={{flex: 1, padding: '0.625rem', borderRadius: '10px', border: '2px solid', borderColor: balanceModal.action === 'add' ? '#16a34a' : '#e2e8f0', background: balanceModal.action === 'add' ? '#f0fdf4' : 'white', color: balanceModal.action === 'add' ? '#16a34a' : '#64748b', fontWeight: 700, cursor: 'pointer'}}>
+                    ➕ Credit
+                  </button>
+                  <button 
+                    onClick={() => setBalanceModal(prev => ({...prev, action: 'deduct'}))}
+                    style={{flex: 1, padding: '0.625rem', borderRadius: '10px', border: '2px solid', borderColor: balanceModal.action === 'deduct' ? '#dc2626' : '#e2e8f0', background: balanceModal.action === 'deduct' ? '#fef2f2' : 'white', color: balanceModal.action === 'deduct' ? '#dc2626' : '#64748b', fontWeight: 700, cursor: 'pointer'}}>
+                    ➖ Deduct
+                  </button>
+                </div>
+                <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.875rem', color: '#374151'}}>Amount (₦)</label>
+                <input 
+                  type="number" 
+                  placeholder="e.g. 5000"
+                  value={balanceAmount}
+                  onChange={e => setBalanceAmount(e.target.value)}
+                  style={{width: '100%', padding: '0.875rem', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '1.125rem', fontWeight: 700, marginBottom: '1.5rem', outline: 'none', boxSizing: 'border-box'}}
+                  autoFocus
+                />
+              </div>
+              <div className="modal-actions-admin">
+                <button className="admin-btn-secondary" onClick={() => setBalanceModal(null)}>Cancel</button>
+                <button 
+                  className="admin-btn-primary" 
+                  disabled={balanceLoading}
+                  style={{background: balanceModal.action === 'add' ? '#16a34a' : '#dc2626'}}
+                  onClick={submitBalanceUpdate}
+                >
+                  {balanceLoading ? 'Processing...' : balanceModal.action === 'add' ? 'Credit Wallet' : 'Deduct Wallet'}
+                </button>
               </div>
             </div>
           </div>
