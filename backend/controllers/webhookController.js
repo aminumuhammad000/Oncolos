@@ -6,79 +6,98 @@ exports.handleDeposit = async (req, res) => {
   // ── Always respond 200 immediately so VTStack doesn't retry ──
   res.status(200).send('OK');
 
+  const raw = req.body || {};
+
+  console.log('\n[Webhook] ══════════════════════════════════════════');
+  console.log('[Webhook] Full body received:', JSON.stringify(raw, null, 2));
+  console.log('[Webhook] Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('[Webhook] ══════════════════════════════════════════\n');
+
+  // ── Optional signature verification ──
   const webhookSecret = process.env.VTSTACK_WEBHOOK_SECRET;
   const signature = req.headers['x-vtstack-signature'];
 
   if (webhookSecret && signature) {
     const hmac = crypto.createHmac('sha256', webhookSecret);
-    const digest = hmac.update(JSON.stringify(req.body)).digest('hex');
+    const digest = hmac.update(JSON.stringify(raw)).digest('hex');
     if (signature !== digest) {
-      console.warn('[VTStack Webhook] ⚠️  Signature mismatch — processing anyway (verification not enforced). Set correct VTSTACK_WEBHOOK_SECRET to enforce.');
+      console.warn('[Webhook] ⚠️  Signature mismatch — processing anyway. Set correct VTSTACK_WEBHOOK_SECRET to enforce.');
     } else {
-      console.log('[VTStack Webhook] ✅ Signature verified.');
+      console.log('[Webhook] ✅ Signature verified.');
     }
   } else {
-    console.warn('[VTStack Webhook] ⚠️  No secret configured — skipping signature check.');
+    console.warn('[Webhook] ⚠️  No secret configured — skipping signature check.');
   }
 
-  const { event, data } = req.body || {};
+  const { event, data } = raw;
 
-  // VTStack sends amount in KOBO — convert to naira
-  const amountNaira = data?.amount ? data.amount / 100 : 0;
+  // ── VTStack sends amount in NAIRA (not kobo) ──
+  const amountNaira = data?.amount ? Number(data.amount) : 0;
 
-  console.log(`\n[VTStack Webhook] ───────────────────────────────`);
-  console.log(`  Event     : ${event}`);
-  console.log(`  Account   : ${data?.accountNumber}`);
-  console.log(`  Amount    : ₦${amountNaira} (raw: ${data?.amount} kobo)`);
-  console.log(`  Reference : ${data?.reference}`);
-  console.log(`  Status    : ${data?.status}`);
-  console.log(`──────────────────────────────────────────────────`);
+  console.log(`[Webhook] Event     : ${event}`);
+  console.log(`[Webhook] Account   : ${data?.accountNumber}`);
+  console.log(`[Webhook] Amount    : ₦${amountNaira}`);
+  console.log(`[Webhook] Reference : ${data?.reference}`);
+  console.log(`[Webhook] Status    : ${data?.status}`);
 
   if (event !== 'transaction.deposit') {
-    console.log(`[VTStack Webhook] Skipping event: ${event}`);
+    console.log(`[Webhook] Skipping non-deposit event: ${event}`);
     return;
   }
 
-  const { accountNumber, reference, status } = data || {};
+  if (!data?.status || data.status !== 'success') {
+    console.warn(`[Webhook] Ignoring non-success status: "${data?.status}"`);
+    return;
+  }
 
-  if (status !== 'success') {
-    console.warn(`[VTStack Webhook] Ignoring non-success status: ${status}`);
+  if (!amountNaira || amountNaira <= 0) {
+    console.error(`[Webhook] ❌ Invalid amount: ${data?.amount}`);
+    return;
+  }
+
+  const { accountNumber, reference } = data;
+
+  if (!accountNumber) {
+    console.error('[Webhook] ❌ Missing accountNumber in payload');
     return;
   }
 
   try {
     // ── Idempotency: skip if already processed ──
-    const existing = await Deposit.findOne({ reference });
-    if (existing) {
-      console.warn(`[VTStack Webhook] DUPLICATE: Reference ${reference} already processed.`);
-      return;
+    if (reference) {
+      const existing = await Deposit.findOne({ reference });
+      if (existing) {
+        console.warn(`[Webhook] DUPLICATE: Reference "${reference}" already processed — skipping.`);
+        return;
+      }
     }
 
     // ── Find user by virtual account number ──
     const user = await User.findOne({ 'virtualAccount.number': accountNumber });
 
     if (!user) {
-      console.error(`[VTStack Webhook] FAILED: No user found for account ${accountNumber}`);
+      console.error(`[Webhook] ❌ No user found with virtualAccount.number="${accountNumber}"`);
       return;
     }
 
-    // ── STEP 1: Atomic wallet credit — guaranteed even if later steps fail ──
+    // ── STEP 1: Atomic wallet credit ──
     await User.updateOne(
       { _id: user._id },
       { $inc: { balance: amountNaira, withdrawBalance: amountNaira } }
     );
-    console.log(`[VTStack Webhook] ✅ Wallet credited: ₦${amountNaira} → ${user.phone}`);
+    console.log(`[Webhook] ✅ Wallet credited: ₦${amountNaira} → user ${user.phone}`);
 
     // ── STEP 2: Record deposit ──
     await Deposit.create({
       user: user._id,
       amount: amountNaira,
-      reference,
+      reference: reference || `MANUAL_${Date.now()}`,
       status: 'Completed',
       channel: 'VTStack'
     });
+    console.log(`[Webhook] ✅ Deposit record created.`);
 
-    // ── STEP 3: Append to earningsHistory (best-effort, non-blocking) ──
+    // ── STEP 3: Append to earningsHistory (best-effort) ──
     try {
       const newEntry = {
         id: Date.now().toString(),
@@ -89,20 +108,19 @@ exports.handleDeposit = async (req, res) => {
         status: 'Completed'
       };
 
-      // Use $push so Mongoose never touches existing (possibly corrupted) data
       await User.updateOne(
         { _id: user._id },
         { $push: { earningsHistory: { $each: [newEntry], $position: 0 } } }
       );
-      console.log(`[VTStack Webhook] ✅ Earnings history updated.`);
+      console.log(`[Webhook] ✅ Earnings history updated.`);
     } catch (histErr) {
-      // History failure must NEVER block the credit — just log and move on
-      console.warn(`[VTStack Webhook] ⚠️  Earnings history update failed (non-critical): ${histErr.message}`);
+      console.warn(`[Webhook] ⚠️  Earnings history update failed (non-critical): ${histErr.message}`);
     }
 
-    console.log(`[VTStack Webhook] ✅ SUCCESS: Credited ₦${amountNaira} to ${user.phone} (ref: ${reference})`);
+    console.log(`\n[Webhook] ✅ SUCCESS: ₦${amountNaira} credited to ${user.phone} (ref: ${reference})\n`);
 
   } catch (err) {
-    console.error(`[VTStack Webhook] ❌ CRITICAL ERROR: ${err.message}`);
+    console.error(`[Webhook] ❌ CRITICAL ERROR: ${err.message}`);
+    console.error(err.stack);
   }
 };
