@@ -1320,7 +1320,22 @@ function App() {
           ) : (
             <div style={{padding: '0 0.5rem'}}>
               <h1 style={{fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.25rem'}}>Withdraw Funds</h1>
-              <p style={{color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem'}}>Minimum amount: ₦600</p>
+              <p style={{color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem'}}>Transfer your earnings to your bank account</p>
+
+              <div className="platform-rules-card" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem', marginBottom:'2rem'}}>
+                <div style={{background: '#f8fafc', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border)'}}>
+                  <p style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.25rem'}}>Min. Withdrawal</p>
+                  <p style={{fontSize: '0.9375rem', fontWeight: '800', color: 'var(--primary)'}}>₦600</p>
+                </div>
+                <div style={{background: '#f8fafc', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border)'}}>
+                  <p style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.25rem'}}>Min. Deposit</p>
+                  <p style={{fontSize: '0.9375rem', fontWeight: '800', color: 'var(--primary)'}}>₦2,500</p>
+                </div>
+                <div style={{background: '#f8fafc', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border)', gridColumn: 'span 2'}}>
+                  <p style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.25rem'}}>Withdrawal Hours</p>
+                  <p style={{fontSize: '0.9375rem', fontWeight: '800', color: '#166534'}}>10:30 AM - 04:30 PM</p>
+                </div>
+              </div>
 
               <form onSubmit={handleWithdrawSubmit}>
                 <div className="form-group">
