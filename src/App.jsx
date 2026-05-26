@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Home, TrendingUp, Users, User, ArrowLeft, LogOut, Copy, Gift, Shield, Eye, EyeOff, Rocket, Wallet, CreditCard, Clock, Check, ArrowDownCircle, BarChart2, X, PlusCircle, ChevronRight, MessageSquare, Headset, Send, Bell } from 'lucide-react'
 
+const API_URL = 'https://api.oncolos.com.ng/api';
+
 function App() {
   const [view, setView] = useState('login');
   const [user, setUser] = useState(null);
@@ -53,9 +55,14 @@ function App() {
         }
       } catch (err) {
         console.error('Session recovery failed:', err);
+      } finally {
+        setLoading(false);
       }
     };
-    recoverSession();
+    recoverSession().catch(() => setLoading(false));
+    if (!localStorage.getItem('oncolos_token')) {
+        setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -162,7 +169,7 @@ function App() {
     { price: 300000, daily: 50000 },
   ];
 
-  const API_URL = 'https://api.oncolos.com.ng/api';
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
