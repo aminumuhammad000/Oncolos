@@ -226,6 +226,50 @@ export default function AdminApp() {
     }
   };
 
+  const handleUpdateStatus = async (userId, status) => {
+    try {
+      const res = await fetch(`${API_BASE}/users/${userId}/status`, {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('oncolos_admin_token')}`
+        },
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsers(prev => prev.map(u => u._id === userId ? { ...u, status } : u));
+        setSelectedUser(prev => prev ? { ...prev, status } : null);
+        alert(`User status updated to ${status}!`);
+      }
+    } catch (err) {
+      console.error('Failed to update status:', err);
+      alert('Error updating status');
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('ARE YOU SURE? This will permanently delete the user and all their investments/withdrawals. This cannot be undone.')) return;
+    
+    try {
+      const res = await fetch(`${API_BASE}/users/${userId}`, {
+        method: 'DELETE',
+        headers: { 
+            'Authorization': `Bearer ${localStorage.getItem('oncolos_admin_token')}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsers(prev => prev.filter(u => u._id !== userId));
+        setSelectedUser(null);
+        alert('User deleted successfully');
+      }
+    } catch (err) {
+      console.error('Failed to delete user:', err);
+      alert('Error deleting user');
+    }
+  };
+
   const nav = [
     { id: 'dashboard',   label: 'Dashboard',    icon: LayoutDashboard },
     { id: 'users',       label: 'Users',         icon: Users },
@@ -706,6 +750,12 @@ export default function AdminApp() {
                  <button className="admin-btn-secondary" onClick={() => handleUpdateKYC(selectedUser._id, 'verified')}>Approve KYC</button>
                  <button className="admin-btn-primary" style={{background: '#16a34a'}} onClick={() => handleAdjustBalance(selectedUser._id, selectedUser.name || selectedUser.phone)}>💳 Credit Wallet</button>
                  <button className="admin-btn-primary" style={{background: '#dc2626'}} onClick={() => { setBalanceModal({ userId: selectedUser._id, userName: selectedUser.name || selectedUser.phone, action: 'deduct' }); setBalanceAmount(''); }}>Deduct Wallet</button>
+                 {selectedUser.status === 'Banned' ? (
+                   <button className="admin-btn-secondary" style={{borderColor: '#16a34a', color: '#16a34a'}} onClick={() => handleUpdateStatus(selectedUser._id, 'Active')}>Unban User</button>
+                 ) : (
+                   <button className="admin-btn-secondary" style={{borderColor: '#dc2626', color: '#dc2626'}} onClick={() => handleUpdateStatus(selectedUser._id, 'Banned')}>Ban User</button>
+                 )}
+                 <button className="admin-btn-secondary" style={{background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca'}} onClick={() => handleDeleteUser(selectedUser._id)}>Delete User</button>
               </div>
             </div>
           </div>

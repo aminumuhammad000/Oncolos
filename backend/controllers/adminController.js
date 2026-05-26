@@ -147,3 +147,38 @@ exports.updateUserBalance = async (req, res) => {
   }
 };
 
+exports.updateUserStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['Active', 'Banned'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const user = await User.findByIdAndUpdate(id, { status }, { new: true });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.status(200).json({ success: true, message: `User status updated to ${status}` });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const user = await User.findByIdAndDelete(id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Also delete user's investments and withdrawals for cleanup
+    await Investment.deleteMany({ user: id });
+    await Withdrawal.deleteMany({ user: id });
+
+    res.status(200).json({ success: true, message: 'User and all related data deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+

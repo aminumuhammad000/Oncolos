@@ -9,7 +9,9 @@ const {
   getAllWithdrawals,
   updateWithdrawalStatus,
   updateUserKYC,
-  updateUserBalance
+  updateUserBalance,
+  updateUserStatus,
+  deleteUser
 } = require('../controllers/adminController');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
 const router = express.Router();
@@ -27,5 +29,7 @@ router.get('/withdrawals', getAllWithdrawals);
 router.post('/withdrawals/:id/status', updateWithdrawalStatus);
 router.post('/users/:id/kyc', updateUserKYC);
 router.post('/users/:id/balance', updateUserBalance);
+router.post('/users/:id/status', updateUserStatus);
+router.delete('/users/:id', deleteUser);
 
 module.exports = router;
