@@ -29,6 +29,7 @@ router.get('/settings', getSettings);
 router.post('/settings', updateSetting);
 router.get('/withdrawals', getAllWithdrawals);
 router.post('/withdrawals/:id/status', updateWithdrawalStatus);
+router.get('/deposits', getAllDeposits);
 router.post('/users/:id/kyc', updateUserKYC);
 router.post('/users/:id/balance', updateUserBalance);
 router.post('/users/:id/status', updateUserStatus);

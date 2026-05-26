@@ -25,6 +25,12 @@ const withdrawalSchema = new mongoose.Schema({
   accountName: {
     type: String
   },
+  bankCode: {
+    type: String
+  },
+  netAmount: {
+    type: Number
+  },
   status: {
     type: String,
     enum: ['Pending', 'Approved', 'Rejected'],

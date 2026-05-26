@@ -129,6 +129,7 @@ function App() {
             body: JSON.stringify({
                 amount: amount,
                 bank: bankName,
+                bankCode: withdrawForm.bank,
                 accountNumber: withdrawForm.accountNumber,
                 accountName: withdrawForm.resolvedName
             })
@@ -592,62 +593,6 @@ function App() {
             </div>
           </div>
 
-          {/* Virtual Account Section */}
-          {user?.virtualAccount?.number ? (
-            <div className="virtual-account-card">
-              <div className="va-header">
-                  <h3>Deposit Account</h3>
-                  <Shield size={16} color="#10b981" />
-              </div>
-              <div className="va-details">
-                  <div className="va-row">
-                      <span>Account Name</span>
-                      <strong style={{textAlign: 'right'}}>{user.virtualAccount.name}</strong>
-                  </div>
-                  <div className="va-row">
-                      <span>Account Number</span>
-                      <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                          <strong style={{fontSize: '1.1rem'}}>{user.virtualAccount.number}</strong>
-                          <button className="copy-va" onClick={() => { navigator.clipboard.writeText(user.virtualAccount.number); setSuccessAlert({ title: 'Copied!', message: 'Account number copied to clipboard.' }); }}>
-                              <Copy size={14} />
-                          </button>
-                      </div>
-                  </div>
-                  <div className="va-row">
-                      <span>Bank Name</span>
-                      <strong>{user.virtualAccount.bank}</strong>
-                  </div>
-              </div>
-              <p className="va-info">Money sent to this account will be immediately credited to your wallet balance.</p>
-            </div>
-          ) : (
-            <div className="virtual-account-card" style={{textAlign:'center', padding:'2rem 1.5rem'}}>
-              <div style={{fontSize:'2.5rem', marginBottom:'0.75rem'}}>🏦</div>
-              <h3 style={{marginBottom:'0.5rem', fontSize:'1rem'}}>No Deposit Account Yet</h3>
-              <p style={{fontSize:'0.85rem', color:'var(--text-muted)', marginBottom:'1.5rem'}}>Generate your personal PalmPay account to receive deposits instantly.</p>
-              <button
-                className="btn btn-primary"
-                style={{width:'100%', padding:'0.875rem'}}
-                onClick={async () => {
-                  try {
-                    const res = await fetch(`${API_URL}/users/generate-virtual-account`, {
-                      method: 'POST',
-                      headers: { 'Authorization': `Bearer ${localStorage.getItem('oncolos_token')}` }
-                    });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.message);
-                    setUser(prev => ({ ...prev, virtualAccount: data.virtualAccount }));
-                    setSuccessAlert({ title: '🏦 Account Created!', message: `Your PalmPay account ${data.virtualAccount.number} is ready. Send money to fund your wallet.` });
-                  } catch (err) {
-                    setErrorAlert({ title: 'Failed', message: err.message });
-                  }
-                }}
-              >
-                Generate Virtual Account
-              </button>
-            </div>
-          )}
-
           <div style={{height: '1rem'}}></div>
 
           <div className={`reward-card-premium ${hasClaimedToday ? 'claimed' : ''}`} onClick={handleSignIn}>
@@ -823,37 +768,69 @@ function App() {
             ) : (
                 <div className="payment-step fade-in">
                     <h2 style={{fontSize: '1.25rem', fontWeight: '800', marginBottom: '0.5rem'}}>Complete Payment</h2>
-                    <p style={{color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '2rem'}}>Kindly transfer the exact amount to the account below</p>
+                    <p style={{color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem'}}>Kindly transfer the exact amount to the account below</p>
 
-                    <div style={{background: 'var(--bg-main)', padding: '1.5rem', borderRadius: '24px', border: '1px dashed var(--primary)', textAlign: 'center', marginBottom: '2rem'}}>
-                        <p style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem'}}>Amount to Pay</p>
-                        <h3 style={{fontSize: '2rem', fontWeight: '900', color: 'var(--primary)'}}>₦{parseFloat(rechargeAmount).toLocaleString()}</h3>
+                    <div style={{background: 'var(--bg-main)', padding: '1.25rem', borderRadius: '24px', border: '1px dashed var(--primary)', textAlign: 'center', marginBottom: '1.5rem'}}>
+                        <p style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem'}}>Amount to Pay</p>
+                        <h3 style={{fontSize: '1.75rem', fontWeight: '900', color: 'var(--primary)'}}>₦{parseFloat(rechargeAmount).toLocaleString()}</h3>
                     </div>
 
-                    <div className="virtual-account-card recharge-va" style={{background: 'white', boxShadow: 'none', border: '1px solid var(--border)', padding: '1.5rem'}}>
-                        <div className="va-row">
-                            <span>Bank Name</span>
-                            <strong>{user.virtualAccount?.bank || 'Fetching...'}</strong>
-                        </div>
-                        <div className="va-row">
-                            <span>Account Number</span>
-                            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                                <strong style={{fontSize: '1.1rem'}}>{user.virtualAccount?.number || '—'}</strong>
-                                <button className="copy-va" onClick={() => { navigator.clipboard.writeText(user.virtualAccount.number); setSuccessAlert({ title: 'Copied!', message: 'Account number copied.' }); }}>
-                                    <Copy size={14} />
-                                </button>
+                    {user?.virtualAccount?.number ? (
+                        <div className="virtual-account-card recharge-va" style={{background: 'white', boxShadow: 'none', border: '1px solid var(--border)', padding: '1.5rem'}}>
+                            <div className="va-row">
+                                <span>Bank Name</span>
+                                <strong>{user.virtualAccount.bank}</strong>
+                            </div>
+                            <div className="va-row">
+                                <span>Account Number</span>
+                                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                    <strong style={{fontSize: '1.1rem'}}>{user.virtualAccount.number}</strong>
+                                    <button className="copy-va" onClick={() => { navigator.clipboard.writeText(user.virtualAccount.number); setSuccessAlert({ title: 'Copied!', message: 'Account number copied.' }); }}>
+                                        <Copy size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="va-row">
+                                <span>Beneficiary</span>
+                                <strong style={{fontSize: '0.8125rem'}}>{user.virtualAccount.name}</strong>
                             </div>
                         </div>
-                        <div className="va-row">
-                            <span>Beneficiary</span>
-                            <strong style={{fontSize: '0.8125rem'}}>{user.virtualAccount?.name || user.name.toUpperCase()}</strong>
+                    ) : (
+                        <div style={{padding: '1.5rem', background: '#fff7ed', borderRadius: '15px', border: '1px solid #ffedd5', textAlign: 'center'}}>
+                            <p style={{fontSize: '0.875rem', color: '#9a3412', marginBottom: '1rem'}}>You haven't generated a deposit account yet.</p>
+                            <button 
+                                className="btn btn-primary" 
+                                style={{fontSize: '0.8125rem', height: '40px'}}
+                                onClick={async () => {
+                                    try {
+                                        const res = await fetch(`${API_URL}/users/generate-virtual-account`, {
+                                            method: 'POST',
+                                            headers: { 'Authorization': `Bearer ${localStorage.getItem('oncolos_token')}` }
+                                        });
+                                        const data = await res.json();
+                                        if (!res.ok) throw new Error(data.message);
+                                        setUser(prev => ({ ...prev, virtualAccount: data.virtualAccount }));
+                                    } catch (err) {
+                                        setErrorAlert({ title: 'Error', message: err.message });
+                                    }
+                                }}
+                            >
+                                Generate Account Now
+                            </button>
                         </div>
-                    </div>
+                    )}
 
                     <div style={{marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem'}}>
                         <button 
-                            className="admin-btn-primary" 
-                            style={{background: '#16a34a'}}
+                            className="btn btn-primary" 
+                            style={{
+                                background: '#16a34a', 
+                                border: 'none', 
+                                height: '54px', 
+                                fontSize: '1.1rem', 
+                                fontWeight: '800',
+                                boxShadow: '0 8px 20px -6px rgba(22, 163, 74, 0.4)'
+                            }}
                             onClick={() => {
                                 setView('dashboard');
                                 setRechargeStep('select');
@@ -866,8 +843,7 @@ function App() {
                             I Have Paid
                         </button>
                         <button 
-                            className="admin-btn-secondary" 
-                            style={{border: 'none', background: 'transparent', color: 'var(--text-muted)'}}
+                            style={{background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.875rem', cursor: 'pointer', fontWeight: '600'}}
                             onClick={() => setRechargeStep('select')}
                         >
                             Change Amount

@@ -150,7 +150,7 @@ exports.updatePassword = async (req, res) => {
 };
 exports.requestWithdrawal = async (req, res) => {
     try {
-        const { amount, bank, accountNumber, accountName } = req.body;
+        const { amount, bank, bankCode, accountNumber, accountName } = req.body;
         
         // 1. Check if withdrawals are enabled globally
         const withdrawalSetting = await Settings.findOne({ key: 'isWithdrawalEnabled' });
@@ -161,6 +161,7 @@ exports.requestWithdrawal = async (req, res) => {
         const feeSetting = await Settings.findOne({ key: 'withdrawalFeePercent' });
         const feePercent = feeSetting ? Number(feeSetting.value) : 15;
         const fee = (amount * feePercent) / 100;
+        const netAmount = amount - fee;
 
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
@@ -181,7 +182,9 @@ exports.requestWithdrawal = async (req, res) => {
             user: user._id,
             amount,
             fee,
+            netAmount,
             bank,
+            bankCode,
             accountNumber,
             accountName,
             status: 'Pending'

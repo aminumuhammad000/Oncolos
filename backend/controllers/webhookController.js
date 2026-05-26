@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Deposit = require('../models/Deposit');
 const { verifyWebhookSignature } = require('../utils/vtstack');
 const crypto = require('crypto');
 
@@ -12,32 +13,42 @@ exports.handleDeposit = async (req, res) => {
   }
 
   const { event, data } = req.body;
+  console.log(`[VTStack Webhook] Received ${event} for reference: ${data?.reference || 'N/A'}`);
 
-  if (event === 'transaction.deposit') {
+  if (event === 'transaction.deposit' || event === 'charge.success') {
     const { accountNumber, amount, reference, status } = data;
+    console.log(`[VTStack Webhook] Processing deposit: ₦${amount} to account ${accountNumber}, status: ${status}`);
 
-    if (status === 'success') {
+    if (status === 'success' || status === 'completed') {
       try {
-        // Find user by virtual account number
         const user = await User.findOne({ 'virtualAccount.number': accountNumber });
         
         if (user) {
           user.balance += amount;
-          user.withdrawBalance += amount; // Assuming incoming funds are withdrawable
-          
-          // Log earnings
-          // ... implementation for recording transaction history
-          
+          user.withdrawBalance += amount; 
           await user.save();
-          console.log(`Successfully credited ${amount} to User: ${user.phone}`);
+
+          await Deposit.create({
+            user: user._id,
+            amount,
+            reference: reference || `VT_${Date.now()}`,
+            status: 'Completed'
+          });
+
+          console.log(`[VTStack Webhook] SUCCESS: Credited ₦${amount} to user ${user.phone}`);
+        } else {
+          console.warn(`[VTStack Webhook] FAILED: No user found with account number ${accountNumber}`);
         }
       } catch (err) {
-        console.error('Webhook processing error:', err.message);
+        console.error('[VTStack Webhook] CRITICAL ERROR:', err.message);
       }
+    } else {
+      console.warn(`[VTStack Webhook] IGNORED: Deposit status is ${status}`);
     }
+  } else {
+    console.log(`[VTStack Webhook] IGNORED: Event ${event} is not a deposit.`);
   }
 
-  // Always return 200 to acknowledge receipt
   res.status(200).send('OK');
 };
 
@@ -50,14 +61,13 @@ exports.handlePaystackWebhook = async (req, res) => {
   }
 
   const { event, data } = req.body;
+  console.log(`[Paystack Webhook] Received ${event} for reference: ${data?.reference || 'N/A'}`);
 
   if (event === 'charge.success') {
     const { amount, customer } = data;
-    // Paystack returns amount in kobo
     const realAmount = amount / 100;
-    
-    // Account number for dedicated accounts
     const accountNumber = data.dedicated_account?.account_number;
+    console.log(`[Paystack Webhook] Processing success: ₦${realAmount} for customer: ${customer.email}, virtualAccount: ${accountNumber || 'N/A'}`);
 
     try {
       const user = await User.findOne({ 
@@ -69,7 +79,6 @@ exports.handlePaystackWebhook = async (req, res) => {
 
       if (user) {
         user.balance += realAmount;
-        // Also add to earnings history
         const newEarning = {
             id: Date.now().toString(),
             type: 'Fund Deposit',
@@ -79,12 +88,22 @@ exports.handlePaystackWebhook = async (req, res) => {
             status: 'Completed'
         };
         user.earningsHistory = [newEarning, ...(user.earningsHistory || [])];
-        
         await user.save();
-        console.log(`Paystack Webhook: Credited ₦${realAmount} to User: ${user.phone}`);
+
+        await Deposit.create({
+            user: user._id,
+            amount: realAmount,
+            reference: data.reference,
+            status: 'Completed',
+            channel: 'Paystack'
+        });
+
+        console.log(`[Paystack Webhook] SUCCESS: Credited ₦${realAmount} to user ${user.phone}`);
+      } else {
+        console.warn(`[Paystack Webhook] FAILED: No user found matching customer/account`);
       }
     } catch (err) {
-      console.error('Paystack webhook error:', err.message);
+      console.error('[Paystack Webhook] CRITICAL ERROR:', err.message);
     }
   }
 

@@ -50,10 +50,11 @@ export default function AdminApp() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedInvestment, setSelectedInvestment] = useState(null);
-  const [platformSettings, setPlatformSettings] = useState({ isDailyBonusEnabled: true, isWelcomeBonusEnabled: true, welcomeBonusAmount: 600, isWithdrawalEnabled: true, withdrawalFee: 50 });
+  const [platformSettings, setPlatformSettings] = useState({ isDailyBonusEnabled: true, isWelcomeBonusEnabled: true, welcomeBonusAmount: 600, isWithdrawalEnabled: true, withdrawalFeePercent: 15 });
   const [gateway, setGateway] = useState({ provider: 'VTStack (Recommended)', mode: 'test', publicKey: '', payoutKey: '', webhookSecret: '' });
   const [emailSettings, setEmailSettings] = useState({ smtpEmail: '', appPassword: '' });
   const [withdrawals, setWithdrawals] = useState([]);
+  const [deposits, setDeposits] = useState([]);
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [balanceModal, setBalanceModal] = useState(null); // { userId, userName, action: 'add'|'deduct' }
@@ -121,6 +122,13 @@ export default function AdminApp() {
         });
         const data = await res.json();
         if (data.success) setWithdrawals(data.data);
+      }
+      if (section === 'deposits') {
+        const res = await fetch(`${API_BASE}/deposits`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) setDeposits(data.data);
       }
       if (section === 'settings') {
         const res = await fetch(`${API_BASE}/settings`, {
@@ -274,12 +282,13 @@ export default function AdminApp() {
 
   const nav = [
     { id: 'dashboard',   label: 'Dashboard',    icon: LayoutDashboard },
-    { id: 'users',       label: 'Users',         icon: Users },
-    { id: 'investments', label: 'Investments',   icon: TrendingUp },
-    { id: 'referrals',  label: 'Referrals',     icon: ChevronRight },
+    { id: 'users',       label: 'User Management', icon: Users },
+    { id: 'wallet',      label: 'Wallet Management', icon: Shield },
+    { id: 'deposits',    label: 'User Payments',  icon: CreditCard },
     { id: 'withdrawals', label: 'Withdrawals',   icon: ArrowDownCircle },
-    { id: 'payments',    label: 'Payments',      icon: CreditCard },
-    { id: 'settings',    label: 'Settings',      icon: Settings },
+    { id: 'investments', label: 'Investments',   icon: TrendingUp },
+    { id: 'referrals',   label: 'Referrals',     icon: ChevronRight },
+    { id: 'settings',    label: 'Platform Settings', icon: Settings },
   ];
 
   const handleAdminLogin = async (e) => {
@@ -450,6 +459,70 @@ export default function AdminApp() {
                       ))}
                   {withdrawals.filter(w=>w.status==='Pending').length === 0 && <p className="muted" style={{textAlign:'center',padding:'1rem'}}>No pending withdrawals</p>}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Wallet Management ── */}
+          {section === 'wallet' && (
+            <div>
+              <h1 className="page-title">Wallet Management</h1>
+              <div className="admin-card" style={{maxWidth: '800px'}}>
+                <p className="muted" style={{marginBottom: '1.5rem'}}>Search for a user to credit or deduct their balance manually.</p>
+                
+                <div className="table-responsive">
+                  <table className="admin-table">
+                    <thead><tr><th>User</th><th>Phone</th><th>Balance</th><th>Actions</th></tr></thead>
+                    <tbody>
+                      {users
+                        .filter(u => {
+                           const term = search.toLowerCase();
+                           return !term || (u.name || '').toLowerCase().includes(term) || (u.phone || '').includes(term);
+                        })
+                        .slice(0, 10).map(u => (
+                        <tr key={u._id}>
+                          <td className="fw600">{u.name || u.phone}</td>
+                          <td>{u.phone}</td>
+                          <td>₦{u.balance?.toLocaleString()}</td>
+                          <td>
+                            <div style={{display:'flex', gap:'0.5rem'}}>
+                              <button className="btn btn-primary" style={{fontSize:'0.75rem', height:'32px', background:'#16a34a', border:'none'}} onClick={() => setBalanceModal({ userId: u._id, userName: u.name || u.phone, action: 'add' })}>Credit</button>
+                              <button className="btn btn-primary" style={{fontSize:'0.75rem', height:'32px', background:'#dc2626', border:'none'}} onClick={() => setBalanceModal({ userId: u._id, userName: u.name || u.phone, action: 'deduct' })}>Deduct</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── User Payments (Deposits) ── */}
+          {section === 'deposits' && (
+            <div>
+              <h1 className="page-title">User Payments</h1>
+              <div className="admin-card">
+                 <div className="table-responsive">
+                    <table className="admin-table">
+                      <thead><tr><th>#</th><th>User</th><th>Amount</th><th>Reference</th><th>Channel</th><th>Date</th><th>Status</th></tr></thead>
+                      <tbody>
+                        {deposits.map((d, i) => (
+                           <tr key={d._id}>
+                             <td className="muted">{i+1}</td>
+                             <td className="fw600">{d.user?.name || d.user?.phone || 'Unknown'}</td>
+                             <td>₦{d.amount.toLocaleString()}</td>
+                             <td style={{fontSize:'0.75rem'}} className="muted">{d.reference}</td>
+                             <td>{d.channel}</td>
+                             <td className="muted">{new Date(d.createdAt).toLocaleString()}</td>
+                             <td><Badge status="Completed" /></td>
+                           </tr>
+                        ))}
+                        {deposits.length === 0 && <tr><td colSpan="7" style={{textAlign:'center', padding:'2rem'}} className="muted">No payments found yet.</td></tr>}
+                      </tbody>
+                    </table>
+                 </div>
               </div>
             </div>
           )}

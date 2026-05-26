@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Investment = require('../models/Investment');
 const Withdrawal = require('../models/Withdrawal');
+const Deposit = require('../models/Deposit');
 const Settings = require('../models/Settings');
 
 exports.getDashboardStats = async (req, res) => {
@@ -110,8 +111,32 @@ exports.updateWithdrawalStatus = async (req, res) => {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
-    const withdrawal = await Withdrawal.findByIdAndUpdate(id, { status }, { new: true });
+    const withdrawal = await Withdrawal.findById(id).populate('user');
     if (!withdrawal) return res.status(404).json({ message: 'Withdrawal not found' });
+
+    if (status === 'Approved') {
+        // Trigger Secure Payout
+        try {
+            const { initiatePayout } = require('../utils/vtstack');
+            const payoutResult = await initiatePayout({
+                amount: withdrawal.netAmount || (withdrawal.amount - withdrawal.fee),
+                bankCode: withdrawal.bankCode || '999', // Assume bankCode is stored or handled
+                accountNumber: withdrawal.accountNumber,
+                accountName: withdrawal.accountName,
+                narration: `Withdrawal for ${withdrawal.user?.phone || 'User'}`
+            });
+            console.log('Automated Payout Success:', payoutResult);
+        } catch (payoutErr) {
+            console.error('Automated Payout Failed:', payoutErr.response?.data || payoutErr.message);
+            return res.status(500).json({ 
+                message: 'Admin approval saved, but automated payout failed. Please check gateway balance or process manually.',
+                error: payoutErr.response?.data || payoutErr.message
+            });
+        }
+    }
+
+    withdrawal.status = status;
+    await withdrawal.save();
 
     res.status(200).json({ success: true, message: `Withdrawal ${status.toLowerCase()} successfully` });
   } catch (err) {
@@ -186,6 +211,14 @@ exports.deleteUser = async (req, res) => {
     await Withdrawal.deleteMany({ user: id });
 
     res.status(200).json({ success: true, message: 'User and all related data deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+exports.getAllDeposits = async (req, res) => {
+  try {
+    const deposits = await Deposit.find().populate('user', 'name phone email').sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: deposits });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
