@@ -41,16 +41,26 @@ exports.createVirtualAccount = async (userData) => {
     const errorData = err.response?.data || { status: 'error', message: err.message };
     console.error('VTStack Create Account Error:', errorData);
     
-    // If it's a 400 error but the message sounds like success or "already exists",
-    // we should still try to return it if it has data
-    if (errorData.data && (errorData.data.account_number || errorData.data.accountNumber)) {
-       const acc = errorData.data;
+    // Scan errorData recursively for anything that looks like an account object
+    const findAcc = (obj) => {
+      if (!obj || typeof obj !== 'object') return null;
+      if (obj.account_number || obj.accountNumber) return obj;
+      for (const k in obj) {
+        const found = findAcc(obj[k]);
+        if (found) return found;
+      }
+      return null;
+    };
+
+    const existingAcc = findAcc(errorData);
+    
+    if (existingAcc) {
        return {
          status: 'success',
          data: {
-           accountNumber: acc.account_number || acc.accountNumber,
-           bankName: acc.bank_name || acc.bankName || 'VTStack Bank',
-           accountName: acc.account_name || acc.accountName
+           accountNumber: existingAcc.account_number || existingAcc.accountNumber,
+           bankName: existingAcc.bank_name || existingAcc.bankName || 'VTStack Bank',
+           accountName: existingAcc.account_name || existingAcc.accountName
          }
        };
     }
