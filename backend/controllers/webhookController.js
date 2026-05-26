@@ -34,8 +34,11 @@ exports.handleDeposit = async (req, res) => {
   // ── VTStack sends amount in NAIRA (not kobo) ──
   const amountNaira = data?.amount ? Number(data.amount) : 0;
 
+  // VTStack may use 'virtualAccount' or 'accountNumber'
+  const accountNumber = data?.virtualAccount || data?.accountNumber;
+
   console.log(`[Webhook] Event     : ${event}`);
-  console.log(`[Webhook] Account   : ${data?.accountNumber}`);
+  console.log(`[Webhook] Account   : ${accountNumber}`);
   console.log(`[Webhook] Amount    : ₦${amountNaira}`);
   console.log(`[Webhook] Reference : ${data?.reference}`);
   console.log(`[Webhook] Status    : ${data?.status}`);
@@ -55,12 +58,13 @@ exports.handleDeposit = async (req, res) => {
     return;
   }
 
-  const { accountNumber, reference } = data;
+  const { reference } = data;
 
   if (!accountNumber) {
-    console.error('[Webhook] ❌ Missing accountNumber in payload');
+    console.error('[Webhook] ❌ Missing accountNumber or virtualAccount in payload');
     return;
   }
+
 
   try {
     // ── Idempotency: skip if already processed ──
