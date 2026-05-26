@@ -86,7 +86,12 @@ exports.getBanks = async () => {
         const response = await axios.get(`${VTSTACK_BASE_URL}/banks`, {
             headers: { 'x-api-key': apiKey }
         });
-        return response.data.data || [];
+        const raw = response.data.data || [];
+        // Normalize: VTStack may return bankCode or code as the bank identifier
+        return raw.map(b => ({
+            code: b.bankCode || b.code || b.bank_code,
+            name: b.bankName || b.name || b.bank_name
+        }));
     } catch (err) {
         console.error('VTStack Get Banks Error:', err.message);
         return [];
@@ -99,13 +104,16 @@ exports.getBanks = async () => {
 exports.verifyBankAccount = async (bankCode, accountNumber) => {
   const apiKey = process.env.VTSTACK_API_KEY;
   try {
+    console.log(`[VTStack] Verifying: bankCode=${bankCode}, accountNumber=${accountNumber}`);
     const response = await axios.get(`${VTSTACK_BASE_URL}/banks/verify`, {
       params: { bankCode, accountNumber },
       headers: { 'x-api-key': apiKey }
     });
+    console.log('[VTStack] Verify response:', response.data);
     return response.data;
   } catch (err) {
-    console.error('VTStack Verify Account Error:', err.response?.data || err.message);
+    const errData = err.response?.data || { message: err.message };
+    console.error('[VTStack] Verify Account Error:', errData);
     throw err;
   }
 };
