@@ -31,10 +31,11 @@ exports.handleDeposit = async (req, res) => {
 
   const { event, data } = raw;
 
-  // ── VTStack sends amount in NAIRA (not kobo) ──
-  const amountNaira = data?.amount ? Number(data.amount) : 0;
+  // ── VTStack sends amount in KOBO ──
+  const amountNaira = data?.amount ? (Number(data.amount) / 100) : 0;
 
   // VTStack may use 'virtualAccount' or 'accountNumber'
+
   const accountNumber = data?.virtualAccount || data?.accountNumber;
 
   console.log(`[Webhook] Event     : ${event}`);
