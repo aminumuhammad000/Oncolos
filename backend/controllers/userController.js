@@ -158,8 +158,9 @@ exports.requestWithdrawal = async (req, res) => {
             return res.status(403).json({ message: 'Withdrawals are currently closed by the administrator. Please try again later.' });
         }
 
-        const feeSetting = await Settings.findOne({ key: 'withdrawalFee' });
-        const fee = feeSetting ? Number(feeSetting.value) : 50;
+        const feeSetting = await Settings.findOne({ key: 'withdrawalFeePercent' });
+        const feePercent = feeSetting ? Number(feeSetting.value) : 15;
+        const fee = (amount * feePercent) / 100;
 
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: 'User not found' });

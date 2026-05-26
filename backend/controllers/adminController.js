@@ -64,7 +64,10 @@ exports.getSettings = async (req, res) => {
       isWelcomeBonusEnabled: true,
       welcomeBonusAmount: 600,
       isWithdrawalEnabled: true,
-      withdrawalFee: 50
+      withdrawalFeePercent: 15,
+      referralL1: 20,
+      referralL2: 2,
+      referralL3: 1
     };
     const result = { ...defaults };
     settings.forEach(s => result[s.key] = s.value);

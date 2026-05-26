@@ -1099,8 +1099,63 @@ function App() {
                 }} 
                 style={{height: '40px', fontSize: '0.875rem', gap: '8px'}}
               >
-                <Copy size={16} /> Copy Invitation Link
+                <Share2 size={16} /> Copy Invitation Link
               </button>
+
+              <div className="referral-rules" style={{marginTop: '2rem', padding: '1.25rem', background: '#f8fafc', borderRadius: '15px', border: '1px solid var(--border)'}}>
+                  <h4 style={{fontSize: '1.1rem', fontWeight: '800', marginBottom: '1.25rem'}}>Referral Rules</h4>
+                  
+                  <div className="rule-step" style={{display:'flex', gap:'1rem', marginBottom:'1.5rem'}}>
+                    <div style={{width:'28px', height:'28px', borderRadius:'50%', background:'var(--primary)', color:'white', display:'flex', alignItems:'center', justifyCenter:'center', fontSize:'0.75rem', fontWeight:'800', flexShrink:0, justifyContent:'center'}}>1</div>
+                    <div>
+                      <h5 style={{fontSize:'0.9375rem', fontWeight:'700', marginBottom:'0.25rem'}}>Invite Friends</h5>
+                      <p style={{fontSize:'0.8125rem', color:'var(--text-muted)', lineHeight:'1.5'}}>Share your unique referral link or code with your friends and family via social media or messengers.</p>
+                    </div>
+                  </div>
+
+                  <div className="rule-step" style={{display:'flex', gap:'1rem', marginBottom:'1.5rem'}}>
+                    <div style={{width:'28px', height:'28px', borderRadius:'50%', background:'var(--primary)', color:'white', display:'flex', alignItems:'center', justifyCenter:'center', fontSize:'0.75rem', fontWeight:'800', flexShrink:0, justifyContent:'center'}}>2</div>
+                    <div>
+                      <h5 style={{fontSize:'0.9375rem', fontWeight:'700', marginBottom:'0.25rem'}}>They Invest</h5>
+                      <p style={{fontSize:'0.8125rem', color:'var(--text-muted)', lineHeight:'1.5'}}>When your direct referrals (Level 1) or their referrals (Level 2 & 3) subscribe to any investment plan.</p>
+                    </div>
+                  </div>
+
+                  <div className="rule-step" style={{display:'flex', gap:'1rem', marginBottom:'1.5rem'}}>
+                    <div style={{width:'28px', height:'28px', borderRadius:'50%', background:'var(--primary)', color:'white', display:'flex', alignItems:'center', justifyCenter:'center', fontSize:'0.75rem', fontWeight:'800', flexShrink:0, justifyContent:'center'}}>3</div>
+                    <div>
+                      <h5 style={{fontSize:'0.9375rem', fontWeight:'700', marginBottom:'0.25rem'}}>Earn Commission</h5>
+                      <p style={{fontSize:'0.8125rem', color:'var(--text-muted)', lineHeight:'1.5'}}>You get {platformSettings.referralL1 || 20}% from L1, {platformSettings.referralL2 || 2}% from L2, and {platformSettings.referralL3 || 1}% from L3 investments instantly.</p>
+                    </div>
+                  </div>
+
+                  <hr style={{border:'none', borderTop:'1px solid #e2e8f0', margin:'1.5rem 0'}} />
+
+                  <h4 style={{fontSize: '0.9375rem', fontWeight: '800', marginBottom: '1rem'}}>Commission Rates</h4>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                          <div style={{display:'flex', alignItems:'center', gap:'0.75rem'}}>
+                              <div style={{width:'8px', height:'8px', background:'var(--primary)', borderRadius:'50%'}}></div>
+                              <span style={{fontSize:'0.875rem', fontWeight:'600'}}>Level 1 (Direct)</span>
+                          </div>
+                          <span style={{fontSize:'1rem', fontWeight:'800', color:'var(--primary)'}}>{platformSettings.referralL1 || 20}%</span>
+                      </div>
+                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                          <div style={{display:'flex', alignItems:'center', gap:'0.75rem'}}>
+                              <div style={{width:'8px', height:'8px', background:'#64748b', borderRadius:'50%'}}></div>
+                              <span style={{fontSize:'0.875rem', fontWeight:'600'}}>Level 2 (Indirect)</span>
+                          </div>
+                          <span style={{fontSize:'1rem', fontWeight:'800', color:'#64748b'}}>{platformSettings.referralL2 || 2}%</span>
+                      </div>
+                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                          <div style={{display:'flex', alignItems:'center', gap:'0.75rem'}}>
+                              <div style={{width:'8px', height:'8px', background:'#94a3b8', borderRadius:'50%'}}></div>
+                              <span style={{fontSize:'0.875rem', fontWeight:'600'}}>Level 3 (Indirect)</span>
+                          </div>
+                          <span style={{fontSize:'1rem', fontWeight:'800', color:'#94a3b8'}}>{platformSettings.referralL3 || 1}%</span>
+                      </div>
+                  </div>
+              </div>
             </div>
 
             <div className="section-title">People You Invited ({(user?.invitedUsers || []).length})</div>
@@ -1318,11 +1373,11 @@ function App() {
                        Available: ₦{(user?.balance || 0).toLocaleString()}
                      </p>
                      <p style={{fontSize: '0.75rem', color: 'var(--error)', fontWeight: '600'}}>
-                       Service Fee: ₦{(platformSettings.withdrawalFee || 50).toLocaleString()}
+                       Service Fee: {platformSettings.withdrawalFeePercent || 15}% (₦{withdrawForm.amount ? (parseFloat(withdrawForm.amount) * (platformSettings.withdrawalFeePercent || 15) / 100).toLocaleString() : '0'})
                      </p>
                      {withdrawForm.amount && parseFloat(withdrawForm.amount) >= 600 && (
                        <p style={{fontSize: '0.8125rem', color: 'var(--primary)', fontWeight: '700', padding: '0.5rem', background: 'rgba(37, 99, 235, 0.05)', borderRadius: '8px'}}>
-                         You will receive: ₦{(parseFloat(withdrawForm.amount) - (platformSettings.withdrawalFee || 50)).toLocaleString()}
+                         You will receive: ₦{(parseFloat(withdrawForm.amount) - (parseFloat(withdrawForm.amount) * (platformSettings.withdrawalFeePercent || 15) / 100)).toLocaleString()}
                        </p>
                      )}
                   </div>

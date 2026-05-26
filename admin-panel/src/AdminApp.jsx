@@ -769,14 +769,34 @@ export default function AdminApp() {
                   </p>
 
                   <div className="form-group" style={{marginTop: '1.5rem', paddingLeft: '2.5rem'}}>
-                    <label>Withdrawal Fee (₦)</label>
+                    <label>Withdrawal Fee (%)</label>
                     <input 
                       type="number" 
-                      value={platformSettings.withdrawalFee || 50}
-                      onChange={(e) => handleUpdateSetting('withdrawalFee', Number(e.target.value))}
-                      placeholder="50"
+                      value={platformSettings.withdrawalFeePercent || 15}
+                      onChange={(e) => handleUpdateSetting('withdrawalFeePercent', Number(e.target.value))}
+                      placeholder="15"
                     />
-                    <p className="muted" style={{fontSize: '0.7rem', marginTop: '0.25rem'}}>Flat fee charged per withdrawal transaction.</p>
+                    <p className="muted" style={{fontSize: '0.7rem', marginTop: '0.25rem'}}>Percentage charged per withdrawal transaction.</p>
+                  </div>
+
+                  <hr style={{margin: '1.5rem 0', border: 'none', borderTop: '1px solid #eee'}} />
+
+                  <div className="form-group" style={{paddingLeft: '2.5rem'}}>
+                    <label>Referral Commission (%)</label>
+                    <div style={{display:'flex', gap:'1rem', marginTop:'0.5rem'}}>
+                      <div style={{flex:1}}>
+                        <span style={{fontSize:'0.75rem', color:'#64748b'}}>L1 (Direct)</span>
+                        <input type="number" value={platformSettings.referralL1 || 20} onChange={e => handleUpdateSetting('referralL1', Number(e.target.value))} />
+                      </div>
+                      <div style={{flex:1}}>
+                        <span style={{fontSize:'0.75rem', color:'#64748b'}}>L2 (Indirect)</span>
+                        <input type="number" value={platformSettings.referralL2 || 2} onChange={e => handleUpdateSetting('referralL2', Number(e.target.value))} />
+                      </div>
+                      <div style={{flex:1}}>
+                        <span style={{fontSize:'0.75rem', color:'#64748b'}}>L3 (Indirect)</span>
+                        <input type="number" value={platformSettings.referralL3 || 1} onChange={e => handleUpdateSetting('referralL3', Number(e.target.value))} />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
