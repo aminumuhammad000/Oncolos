@@ -5,7 +5,8 @@
  * Example: node scripts/makeAdmin.js 08100015490
  */
 
-require('dotenv').config({ path: '../.env' });
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const mongoose = require('mongoose');
 const User = require('../models/User');
 
