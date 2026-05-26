@@ -1245,29 +1245,35 @@ function App() {
         </nav>
       )}
 
-      {/* Modern Investment Modal */}
+      {/* Modern Investment Confirmation Modal */}
       {showModal && pendingPlan && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <div className="modal-icon-circle">
-                <Check size={32} />
+        <div className="modern-alert-overlay fade-in">
+          <div className="modern-alert slide-up" style={{maxWidth: '360px'}}>
+            <div className="alert-icon-circle" style={{background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: 'white'}}>
+              <Shield size={32} />
+            </div>
+            <h2>Confirm Investment</h2>
+            <div style={{
+              background: '#f8fafc',
+              padding: '1.25rem',
+              borderRadius: '20px',
+              marginBottom: '1.5rem',
+              border: '1px solid var(--border)'
+            }}>
+              <p style={{fontSize: '0.875rem', marginBottom: '0.25rem'}}>You are subscribing to</p>
+              <h3 style={{fontSize: '1.5rem', fontWeight: '800', color: 'var(--primary)', marginBottom: '0.5rem'}}>₦{pendingPlan.price.toLocaleString()} Plan</h3>
+              <div style={{display: 'flex', justifyContent: 'center', gap: '1rem', fontSize: '0.8125rem', fontWeight: '600', color: 'var(--text-muted)'}}>
+                <span>Daily: ₦{pendingPlan.daily.toLocaleString()}</span>
+                <span>•</span>
+                <span>Term: 60 Days</span>
               </div>
-              <h2 style={{fontSize: '1.5rem', fontWeight: '800'}}>Confirm Investment</h2>
             </div>
             
-            <div className="modal-body">
-              <p>You are about to invest</p>
-              <strong>₦{pendingPlan.price.toLocaleString()}</strong>
-              <p style={{fontSize: '0.875rem'}}>Daily Income: ₦{pendingPlan.daily.toLocaleString()}</p>
-              <p style={{fontSize: '0.875rem', marginTop: '0.5rem'}}>Duration: 60 Days</p>
-            </div>
-
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setShowModal(false)} style={{flex: 1}}>
+            <div className="modal-actions" style={{display: 'flex', gap: '0.75rem'}}>
+              <button className="btn btn-secondary" onClick={() => setShowModal(false)} style={{flex: 1, height: '50px'}}>
                 Cancel
               </button>
-              <button className="btn btn-primary" onClick={confirmInvestment} style={{flex: 2}}>
+              <button className="btn btn-primary" onClick={confirmInvestment} style={{flex: 2, height: '50px', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', border: 'none'}}>
                 Approve & Pay
               </button>
             </div>
