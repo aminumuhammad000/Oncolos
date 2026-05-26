@@ -86,6 +86,10 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Incorrect identifier or password' });
     }
 
+    if (user.status === 'Banned') {
+      return res.status(403).json({ message: 'Your account has been suspended. Please contact support.' });
+    }
+
     const token = signToken(user._id);
 
     // Remove password from output
