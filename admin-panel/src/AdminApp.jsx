@@ -671,7 +671,6 @@ export default function AdminApp() {
                     <label>Gateway Provider</label>
                     <select value={gateway.provider} onChange={e => setGateway({...gateway, provider: e.target.value})}>
                       <option value="VTStack (Recommended)">VTStack (Recommended)</option>
-                      <option value="Flutterwave" disabled>Flutterwave (Inactive)</option>
                     </select>
                   </div>
 

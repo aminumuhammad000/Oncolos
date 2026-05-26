@@ -22,10 +22,10 @@ exports.handleDeposit = async (req, res) => {
     if (status === 'success' || status === 'completed') {
       try {
         const user = await User.findOne({ 'virtualAccount.number': accountNumber });
-        
+
         if (user) {
           user.balance += amount;
-          user.withdrawBalance += amount; 
+          user.withdrawBalance += amount;
           await user.save();
 
           await Deposit.create({
@@ -52,60 +52,4 @@ exports.handleDeposit = async (req, res) => {
   res.status(200).send('OK');
 };
 
-exports.handlePaystackWebhook = async (req, res) => {
-  const secretKey = process.env.PAYSTACK_SECRET_KEY;
-  const hash = crypto.createHmac('sha512', secretKey).update(JSON.stringify(req.body)).digest('hex');
 
-  if (hash !== req.headers['x-paystack-signature']) {
-    return res.status(401).send('Invalid signature');
-  }
-
-  const { event, data } = req.body;
-  console.log(`[Paystack Webhook] Received ${event} for reference: ${data?.reference || 'N/A'}`);
-
-  if (event === 'charge.success') {
-    const { amount, customer } = data;
-    const realAmount = amount / 100;
-    const accountNumber = data.dedicated_account?.account_number;
-    console.log(`[Paystack Webhook] Processing success: ₦${realAmount} for customer: ${customer.email}, virtualAccount: ${accountNumber || 'N/A'}`);
-
-    try {
-      const user = await User.findOne({ 
-          $or: [
-              { 'virtualAccount.number': accountNumber },
-              { email: customer.email }
-          ]
-      });
-
-      if (user) {
-        user.balance += realAmount;
-        const newEarning = {
-            id: Date.now().toString(),
-            type: 'Fund Deposit',
-            plan: 'Paystack Transfer',
-            amount: realAmount,
-            date: new Date().toLocaleDateString(),
-            status: 'Completed'
-        };
-        user.earningsHistory = [newEarning, ...(user.earningsHistory || [])];
-        await user.save();
-
-        await Deposit.create({
-            user: user._id,
-            amount: realAmount,
-            reference: data.reference,
-            status: 'Completed',
-            channel: 'Paystack'
-        });
-
-        console.log(`[Paystack Webhook] SUCCESS: Credited ₦${realAmount} to user ${user.phone}`);
-      } else {
-        console.warn(`[Paystack Webhook] FAILED: No user found matching customer/account`);
-      }
-    } catch (err) {
-      console.error('[Paystack Webhook] CRITICAL ERROR:', err.message);
-    }
-  }
-
-  res.status(200).send('OK');
-};
