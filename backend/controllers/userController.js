@@ -123,3 +123,20 @@ exports.verifyBankAccount = async (req, res) => {
     }
 };
 
+exports.updatePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const user = await User.findById(req.user.id).select('+password');
+        
+        if (!user || !(await user.comparePassword(currentPassword, user.password))) {
+            return res.status(401).json({ message: 'Current password is incorrect' });
+        }
+
+        user.password = newPassword;
+        await user.save();
+
+        res.status(200).json({ success: true, message: 'Password updated successfully' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};

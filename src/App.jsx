@@ -153,6 +153,7 @@ function App() {
     e.preventDefault();
     setLoading(true);
     setAuthError('');
+    const name = e.target.fullName.value;
     const phone = e.target.phone.value;
     const email = e.target.email.value;
     const password = e.target.password.value;
@@ -162,7 +163,7 @@ function App() {
       const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, email, password, referralCode })
+        body: JSON.stringify({ name, phone, email, password, referralCode })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Registration failed');
@@ -181,6 +182,36 @@ function App() {
     localStorage.removeItem('oncolos_token');
     setUser(null);
     setView('login');
+  };
+
+  const handlePasswordUpdate = async (e) => {
+    e.preventDefault();
+    const currentPassword = e.target.currentPassword.value;
+    const newPassword = e.target.newPassword.value;
+    const confirmPassword = e.target.confirmPassword.value;
+
+    if (newPassword !== confirmPassword) {
+      setErrorAlert({ title: 'Mismatch', message: 'New passwords do not match.' });
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/users/update-password`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('oncolos_token')}`
+        },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      
+      setSuccessAlert({ title: 'Success!', message: 'Password updated successfully.' });
+      e.target.reset();
+    } catch (err) {
+      setErrorAlert({ title: 'Failed', message: err.message });
+    }
   };
 
   useEffect(() => {
@@ -322,6 +353,10 @@ function App() {
                 <p>Join the Oncolos community</p>
               </div>
               <form onSubmit={handleRegister}>
+                <div className="form-group">
+                  <label>Full Name</label>
+                  <input type="text" name="fullName" placeholder="John Doe" required />
+                </div>
                 <div className="form-group">
                   <label>Phone Number</label>
                   <input type="text" name="phone" placeholder="0812345678" required />
@@ -869,11 +904,11 @@ function App() {
                 Update your account password to ensure security.
               </p>
               
-              <form onSubmit={(e) => { e.preventDefault(); alert('Password updated successfully!'); setView('dashboard'); }}>
+              <form onSubmit={handlePasswordUpdate}>
                 <div className="form-group">
                   <label>Current Password</label>
                   <div className="password-input-wrapper">
-                    <input type={showPassword ? "text" : "password"} placeholder="••••••••" required />
+                    <input name="currentPassword" type={showPassword ? "text" : "password"} placeholder="••••••••" required />
                     <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
                       {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
@@ -882,7 +917,7 @@ function App() {
                 <div className="form-group">
                   <label>New Password</label>
                   <div className="password-input-wrapper">
-                    <input type={showPassword ? "text" : "password"} placeholder="••••••••" required />
+                    <input name="newPassword" type={showPassword ? "text" : "password"} placeholder="••••••••" required />
                     <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
                       {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
@@ -891,7 +926,7 @@ function App() {
                 <div className="form-group">
                   <label>Confirm New Password</label>
                   <div className="password-input-wrapper">
-                    <input type={showPassword ? "text" : "password"} placeholder="••••••••" required />
+                    <input name="confirmPassword" type={showPassword ? "text" : "password"} placeholder="••••••••" required />
                     <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
                       {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
