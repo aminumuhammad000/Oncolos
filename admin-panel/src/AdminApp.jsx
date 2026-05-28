@@ -75,6 +75,7 @@ export default function AdminApp() {
   const [filterKYC, setFilterKYC] = useState('All');
   const [passModal, setPassModal] = useState(null); // { userId, userName }
   const [showPass, setShowPass] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
 
   const API_BASE = 'https://api.oncolos.com.ng/api/admin';
 
@@ -242,7 +243,7 @@ export default function AdminApp() {
   const handleUpdateSetting = async (key, value) => {
     try {
       setPlatformSettings({ ...platformSettings, [key]: value });
-      await fetch(`${API_BASE}/settings`, {
+      const res = await fetch(`${API_BASE}/settings`, {
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',
@@ -250,8 +251,17 @@ export default function AdminApp() {
         },
         body: JSON.stringify({ key, value })
       });
+      if(res.ok) {
+        setToastMsg('Setting saved successfully!');
+        setTimeout(() => setToastMsg(''), 3000);
+      } else {
+        setToastMsg('Failed to save setting');
+        setTimeout(() => setToastMsg(''), 3000);
+      }
     } catch (err) {
       console.error('Failed to update setting:', err);
+      setToastMsg('Network Error');
+      setTimeout(() => setToastMsg(''), 3000);
     }
   };
 
@@ -1401,6 +1411,12 @@ export default function AdminApp() {
                </div>
             </div>
           </div>
+        </div>
+        </div>
+      )}
+      {toastMsg && (
+        <div style={{position: 'fixed', bottom: '20px', right: '20px', background: toastMsg.includes('Failed') || toastMsg.includes('Error') ? '#dc2626' : '#16a34a', color: 'white', padding: '12px 24px', borderRadius: '8px', zIndex: 9999, fontWeight: 600, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', animation: 'slideUp 0.3s ease'}}>
+          {toastMsg}
         </div>
       )}
     </div>
