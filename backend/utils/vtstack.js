@@ -132,7 +132,7 @@ exports.initiatePayout = async (payload) => {
     .digest('hex');
 
   try {
-    const response = await axios.post(`${VTSTACK_BASE_URL}/v1/payout/secure/request`, payload, {
+    const response = await axios.post(`${VTSTACK_BASE_URL}/api/payout/secure/request`, payload, {
       headers: {
         'Authorization': `Bearer ${payoutKey}`,
         'X-Signature': signature,
