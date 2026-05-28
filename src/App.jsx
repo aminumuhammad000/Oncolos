@@ -42,6 +42,7 @@ function App() {
   const [pendingPlan, setPendingPlan] = useState(null);
   const [showBalance, setShowBalance] = useState(true);
   const [withdrawForm, setWithdrawForm] = useState({ bank: '', accountNumber: '', resolvedName: '', amount: '', isResolving: false });
+  const [bankSearchTerm, setBankSearchTerm] = useState('');
   const [successAlert, setSuccessAlert] = useState(null);
   const [errorAlert, setErrorAlert] = useState(null);
   const [urlReferralCode, setUrlReferralCode] = useState('');
@@ -1370,22 +1371,36 @@ function App() {
                 </div>
               </div>
 
-              <form onSubmit={handleWithdrawSubmit}>
+              {!platformSettings.isWithdrawalEnabled && (
+                <div style={{background: '#fef2f2', border: '1px solid #fecaca', padding: '1rem', borderRadius: '12px', color: '#dc2626', marginBottom: '1.5rem', textAlign: 'center'}}>
+                  <strong style={{display: 'block', marginBottom: '0.25rem'}}>Withdrawals Closed</strong>
+                  <span style={{fontSize: '0.875rem'}}>Withdrawals are currently closed by the administrator. Please try again later.</span>
+                </div>
+              )}
+
+              <form onSubmit={handleWithdrawSubmit} style={{opacity: platformSettings.isWithdrawalEnabled ? 1 : 0.6, pointerEvents: platformSettings.isWithdrawalEnabled ? 'auto' : 'none'}}>
                 <div className="form-group">
                   <label>Select Your Bank</label>
-                  <select 
-                    value={withdrawForm.bank} 
+                  <input
+                    list="banks-list"
+                    value={bankSearchTerm}
+                    placeholder="Search or type your bank..."
                     onChange={e => {
-                      const bankCode = e.target.value;
+                      const val = e.target.value;
+                      setBankSearchTerm(val);
+                      const bankObj = realBanks.find(b => b.name === val);
+                      const bankCode = bankObj ? bankObj.code : '';
                       setWithdrawForm(prev => ({ ...prev, bank: bankCode, resolvedName: '' }));
-                      handleNameLookup(withdrawForm.accountNumber, bankCode);
+                      if(withdrawForm.accountNumber && withdrawForm.accountNumber.length === 10 && bankCode) {
+                         handleNameLookup(withdrawForm.accountNumber, bankCode);
+                      }
                     }}
-                    style={{width: '100%', padding: '0.875rem 1rem', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '1rem', background: 'white', color: 'var(--text-main)', appearance: 'none', outline: 'none'}}
-                  >
-                    <option value="">-- Choose Bank --</option>
+                    style={{width: '100%', padding: '0.875rem 1rem', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '1rem', background: 'white', color: 'var(--text-main)', outline: 'none'}}
+                  />
+                  <datalist id="banks-list">
                     {realBanks.filter((bank, idx, arr) => arr.findIndex(b => b.code === bank.code) === idx)
-                      .map((bank, idx) => <option key={`${bank.code}_${idx}`} value={bank.code}>{bank.name}</option>)}
-                  </select>
+                      .map((bank, idx) => <option key={`${bank.code}_${idx}`} value={bank.name}>{bank.name}</option>)}
+                  </datalist>
                 </div>
 
                 <div className="form-group">
