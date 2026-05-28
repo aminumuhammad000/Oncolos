@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Home, TrendingUp, Users, User, ArrowLeft, LogOut, Copy, Gift, Shield, Eye, EyeOff, Rocket, Wallet, CreditCard, Clock, Check, ArrowDownCircle, BarChart2, X, PlusCircle, ChevronRight, MessageSquare, Headset, Send, Bell } from 'lucide-react'
+import { Home, TrendingUp, Users, User, ArrowLeft, LogOut, Copy, Gift, Shield, Eye, EyeOff, Rocket, Wallet, CreditCard, Clock, Check, ArrowDownCircle, BarChart2, X, PlusCircle, ChevronRight, MessageSquare, Headset, Send, Bell, Share2 } from 'lucide-react'
 
 const API_URL = 'https://api.oncolos.com.ng/api';
 
