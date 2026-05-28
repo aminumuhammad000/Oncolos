@@ -63,17 +63,16 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  earningsHistory: {
-    type: [{
+  earningsHistory: [
+    {
       id: String,
-      type: String,
+      type: { type: String },
       amount: Number,
       plan: String,
       date: String,
       status: String
-    }],
-    default: []
-  },
+    }
+  ],
   activeInvestments: {
     type: [Object], // Store snapshots or references
     default: []
