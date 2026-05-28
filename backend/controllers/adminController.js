@@ -157,35 +157,42 @@ exports.updateWithdrawalStatus = async (req, res) => {
     const withdrawal = await Withdrawal.findById(id).populate('user');
     if (!withdrawal) return res.status(404).json({ message: 'Withdrawal not found' });
 
-    if (status === 'Approved') {
-        // Trigger Secure Payout
-        try {
-            const { initiatePayout } = require('../utils/vtstack');
-            const payoutResult = await initiatePayout({
-                amount: withdrawal.netAmount || (withdrawal.amount - withdrawal.fee),
-                bankCode: withdrawal.bankCode || '999', // Assume bankCode is stored or handled
-                accountNumber: withdrawal.accountNumber,
-                accountName: withdrawal.accountName,
-                narration: `Withdrawal for ${withdrawal.user?.phone || 'User'}`
-            });
-            console.log('Automated Payout Success:', payoutResult);
-        } catch (payoutErr) {
-            console.error('Automated Payout Failed:', payoutErr.response?.data || payoutErr.message);
-            return res.status(500).json({ 
-                message: 'Admin approval saved, but automated payout failed. Please check gateway balance or process manually.',
-                error: payoutErr.response?.data || payoutErr.message
-            });
-        }
-    }
-
+    // Save approval status first — always succeeds
     withdrawal.status = status;
     await withdrawal.save();
 
-    res.status(200).json({ success: true, message: `Withdrawal ${status.toLowerCase()} successfully` });
+    let payoutWarning = null;
+
+    if (status === 'Approved') {
+      // Attempt automated payout - non-blocking
+      try {
+        const { initiatePayout } = require('../utils/vtstack');
+        const payoutResult = await initiatePayout({
+          amount: withdrawal.netAmount || (withdrawal.amount - withdrawal.fee),
+          bankCode: withdrawal.bankCode || '100004',
+          accountNumber: withdrawal.accountNumber,
+          accountName: withdrawal.accountName,
+          narration: `Withdrawal for ${withdrawal.user?.phone || 'User'}`
+        });
+        console.log('Automated Payout Success:', payoutResult);
+      } catch (payoutErr) {
+        const errMsg = payoutErr.response?.data?.message || payoutErr.message;
+        console.error('Automated Payout Failed (manual transfer required):', errMsg);
+        payoutWarning = `Approved in system, but automated bank transfer failed: ${errMsg}. Please process manually.`;
+      }
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      message: `Withdrawal ${status.toLowerCase()} successfully`,
+      ...(payoutWarning && { warning: payoutWarning })
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
+
+
 
 exports.updateUserKYC = async (req, res) => {
   try {
