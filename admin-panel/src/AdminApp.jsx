@@ -62,7 +62,7 @@ export default function AdminApp() {
   const [balanceAmount, setBalanceAmount] = useState('');
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [promoModal, setPromoModal] = useState(null); // { id, title, description, type, isActive }
-  const [promoForm, setPromoForm] = useState({ title: '', description: '', type: 'News', isActive: true, imageUrl: '', link: '' });
+  const [promoForm, setPromoForm] = useState({ title: '', description: '', type: 'News', isActive: true, imageUrl: '', link: '', promoCode: '', bonusAmount: 0, maxRedemptions: 0 });
 
   const [stats, setStats] = useState({ totalUsers: 0, activeInvestments: 0, totalBalance: 0, pendingWithdrawals: 0 });
   const [users, setUsers] = useState([]);
@@ -1151,7 +1151,7 @@ export default function AdminApp() {
             <div>
               <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: '2rem'}}>
                 <h1 className="page-title" style={{margin:0}}>Promotions & News</h1>
-                <button className="admin-btn-primary" onClick={() => { setPromoForm({ title: '', description: '', type: 'News', isActive: true, imageUrl: '', link: '' }); setPromoModal('new'); }}>+ New Promotion</button>
+                <button className="admin-btn-primary" onClick={() => { setPromoForm({ title: '', description: '', type: 'News', isActive: true, imageUrl: '', link: '', promoCode: '', bonusAmount: 0, maxRedemptions: 0 }); setPromoModal('new'); }}>+ New Promotion</button>
               </div>
               
               <div className="admin-card">
@@ -1355,6 +1355,20 @@ export default function AdminApp() {
                <div className="form-group">
                  <label>Image URL (optional)</label>
                  <input type="text" value={promoForm.imageUrl} onChange={e => setPromoForm({...promoForm, imageUrl: e.target.value})} placeholder="https://..." />
+               </div>
+               <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <label>Promo Code</label>
+                    <input type="text" value={promoForm.promoCode || ''} onChange={e => setPromoForm({...promoForm, promoCode: e.target.value.toUpperCase()})} placeholder="E.G. GIFT600" />
+                  </div>
+                  <div>
+                    <label>Bonus (₦)</label>
+                    <input type="number" value={promoForm.bonusAmount || 0} onChange={e => setPromoForm({...promoForm, bonusAmount: Number(e.target.value)})} placeholder="600" />
+                  </div>
+                  <div>
+                    <label>Max Uses</label>
+                    <input type="number" value={promoForm.maxRedemptions || 0} onChange={e => setPromoForm({...promoForm, maxRedemptions: Number(e.target.value)})} placeholder="100" />
+                  </div>
                </div>
                <div className="form-group">
                  <label>Target Link (optional)</label>

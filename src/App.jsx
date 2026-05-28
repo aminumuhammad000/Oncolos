@@ -1619,14 +1619,45 @@ function App() {
               </button>
             </form>
 
-            <div style={{ marginTop: '2.5rem', padding: '1.25rem', background: '#f0f9ff', borderRadius: '15px', border: '1px solid #bae6fd', textAlign: 'left' }}>
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <Gift size={20} color="#0369a1" />
-                <h4 style={{ color: '#0369a1', fontWeight: '700' }}>Where to find codes?</h4>
+            <div style={{ marginTop: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', textAlign: 'left' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.25rem' }}>
+                <Gift size={20} color="var(--primary)" />
+                <h4 style={{ color: 'var(--text-main)', fontWeight: '800' }}>Active Gift Rewards</h4>
               </div>
-              <p style={{ fontSize: '0.8125rem', color: '#0c4a6e', lineHeight: '1.6' }}>
-                Codes are shared daily on our official Telegram channel and during special community events. Make sure you follow us to stay updated!
-              </p>
+              
+              {promotions.filter(p => !p.type || p.type === 'Banner' || p.type === 'News').filter(p => p.promoCode).length > 0 ? (
+                promotions.filter(p => !p.type || p.type === 'Banner' || p.type === 'News').filter(p => p.promoCode).map((p, i) => (
+                  <div key={i} className="glass-card" style={{ padding: '1rem', border: '1px solid var(--border)', background: 'white' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <h5 style={{ fontWeight: '800', fontSize: '0.9375rem', marginBottom: '0.125rem' }}>{p.title}</h5>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{p.description}</p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: '800', color: 'var(--primary)' }}>₦{p.bonusAmount?.toLocaleString()}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem', justifyContent: 'flex-end' }}>
+                          <code style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '4px 8px', borderRadius: '6px', color: '#475569', fontWeight: '800', letterSpacing: '1px' }}>{p.promoCode}</code>
+                          <button 
+                            onClick={() => {
+                              navigator.clipboard.writeText(p.promoCode);
+                              setSuccessAlert({ title: 'Copied!', message: 'Gift code copied to clipboard.' });
+                            }}
+                            style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '4px' }}
+                          >
+                            <Copy size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: '1.25rem', background: '#f0f9ff', borderRadius: '15px', border: '1px solid #bae6fd' }}>
+                   <p style={{ fontSize: '0.8125rem', color: '#0c4a6e', lineHeight: '1.6' }}>
+                     Codes are shared daily on our official Telegram channel and during special community events. Make sure you follow us to stay updated!
+                   </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
