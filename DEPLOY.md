@@ -35,3 +35,39 @@ Follow these steps to successfully deploy the Oncolos platform to your live serv
 ## 🛠️ Troubleshooting
 - **404 on API**: Ensure your Nginx configuration forwards requests to the backend port (5000).
 - **MIME Type Error**: Always ensure you have run `npm run build` and you are serving the `dist` folder, not `src`.
+- **Invite Links return 404**: Make sure your Nginx config has the SPA fallback (see below).
+
+---
+
+## ⚙️ Required Nginx Configuration (CRITICAL for invite links)
+
+Without this config, invite links like `https://oncolos.com.ng/?ref=XXXX` will return a 404.
+
+```nginx
+server {
+    listen 80;
+    server_name oncolos.com.ng www.oncolos.com.ng;
+
+    root /var/www/oncolos/dist;        # <-- point to your dist folder
+    index index.html;
+
+    # SPA fallback: serve index.html for ALL requests
+    # This makes /?ref=XXX and any other paths work correctly
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # API proxy: forward /api requests to the backend
+    location /api/ {
+        proxy_pass http://localhost:5000/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+> **After updating Nginx config**: Run `sudo nginx -t && sudo systemctl reload nginx`
+

@@ -55,7 +55,15 @@ exports.register = async (req, res) => {
         content: settings.isWelcomeBonusEnabled 
           ? `Welcome ${displayName}! You have received a welcome bonus of ₦${settings.welcomeBonusAmount} in your wallet.`
           : `Welcome ${displayName}! We are glad to have you on board.`
-      }]
+      }],
+      earningsHistory: settings.isWelcomeBonusEnabled && startBalance > 0 ? [{
+        id: Date.now().toString(),
+        type: 'Welcome Bonus',
+        amount: startBalance,
+        plan: 'Platform Signup',
+        date: new Date().toLocaleDateString(),
+        status: 'Completed'
+      }] : []
     });
 
     // Link invited users for dashboard display
@@ -109,10 +117,17 @@ exports.login = async (req, res) => {
     // Remove password from output
     user.password = undefined;
 
+    // Fetch latest investments
+    const Investment = require('../models/Investment');
+    const investments = await Investment.find({ user: user._id }).sort({ createdAt: -1 });
+
+    const userObj = user.toObject();
+    userObj.activeInvestments = investments;
+
     res.status(200).json({
       status: 'success',
       token,
-      data: { user }
+      data: { user: userObj }
     });
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -121,9 +136,18 @@ exports.login = async (req, res) => {
 exports.getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    // Fetch latest investments
+    const Investment = require('../models/Investment');
+    const investments = await Investment.find({ user: user._id }).sort({ createdAt: -1 });
+    
+    const userObj = user.toObject();
+    userObj.activeInvestments = investments;
+
     res.status(200).json({
       status: 'success',
-      data: { user }
+      data: { user: userObj }
     });
   } catch (err) {
     res.status(400).json({ message: err.message });

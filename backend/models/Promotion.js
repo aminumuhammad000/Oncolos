@@ -25,6 +25,25 @@ const promotionSchema = new mongoose.Schema({
     type: String,
     enum: ['Popup', 'Banner', 'News'],
     default: 'News'
+  },
+  // Redeemable promo code fields
+  promoCode: {
+    type: String,
+    default: '',
+    uppercase: true,
+    trim: true
+  },
+  bonusAmount: {
+    type: Number,
+    default: 0
+  },
+  maxRedemptions: {
+    type: Number,
+    default: 0  // 0 = unlimited
+  },
+  totalRedeemed: {
+    type: Number,
+    default: 0
   }
 }, { timestamps: true });
 

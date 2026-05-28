@@ -24,6 +24,16 @@ exports.claimDailyBonus = async (req, res) => {
     const bonus = 30;
     user.balance += bonus;
     user.lastClaimed = new Date();
+    
+    user.earningsHistory.push({
+      id: Date.now().toString(),
+      type: 'Daily Reward',
+      amount: bonus,
+      plan: 'System Bonus',
+      date: new Date().toLocaleDateString(),
+      status: 'Completed'
+    });
+
     await user.save();
 
     res.status(200).json({

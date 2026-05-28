@@ -240,27 +240,24 @@ export default function AdminApp() {
     }
   };
 
-  const handleUpdateSetting = async (key, value) => {
+  const handleSaveAllSettings = async () => {
     try {
-      setPlatformSettings({ ...platformSettings, [key]: value });
-      const res = await fetch(`${API_BASE}/settings`, {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('oncolos_admin_token')}`
-        },
-        body: JSON.stringify({ key, value })
+      const promises = Object.entries(platformSettings).map(([key, value]) => {
+         return fetch(`${API_BASE}/settings`, {
+          method: 'POST',
+          headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('oncolos_admin_token')}`
+          },
+          body: JSON.stringify({ key, value })
+        });
       });
-      if(res.ok) {
-        setToastMsg('Setting saved successfully!');
-        setTimeout(() => setToastMsg(''), 3000);
-      } else {
-        setToastMsg('Failed to save setting');
-        setTimeout(() => setToastMsg(''), 3000);
-      }
+      await Promise.all(promises);
+      setToastMsg('All settings saved successfully!');
+      setTimeout(() => setToastMsg(''), 3000);
     } catch (err) {
-      console.error('Failed to update setting:', err);
-      setToastMsg('Network Error');
+      console.error('Failed to update settings:', err);
+      setToastMsg('Network Error saving settings');
       setTimeout(() => setToastMsg(''), 3000);
     }
   };
@@ -425,9 +422,8 @@ export default function AdminApp() {
       });
       const data = await res.json();
       if (data.success) {
-        // Redirect to main app with user token
-        // In a real scenario, you might want to open in a new tab
-        window.open(`https://oncolos.com.ng/login?token=${data.token}`, '_blank');
+        // Open the user dashboard in a new tab with their auth token injected via URL
+        window.open(`https://oncolos.com.ng/?token=${data.token}`, '_blank');
       } else {
         alert(data.message);
       }
@@ -1024,7 +1020,7 @@ export default function AdminApp() {
                       type="checkbox" 
                       className="toggle-checkbox" 
                       checked={platformSettings.isDailyBonusEnabled}
-                      onChange={(e) => handleUpdateSetting('isDailyBonusEnabled', e.target.checked)}
+                      onChange={(e) => setPlatformSettings({...platformSettings, isDailyBonusEnabled: e.target.checked})}
                     />
                   </label>
 
@@ -1037,7 +1033,7 @@ export default function AdminApp() {
                       type="checkbox" 
                       className="toggle-checkbox" 
                       checked={platformSettings.isWelcomeBonusEnabled}
-                      onChange={(e) => handleUpdateSetting('isWelcomeBonusEnabled', e.target.checked)}
+                      onChange={(e) => setPlatformSettings({...platformSettings, isWelcomeBonusEnabled: e.target.checked})}
                     />
                   </label>
 
@@ -1047,7 +1043,7 @@ export default function AdminApp() {
                       <input 
                         type="number" 
                         value={platformSettings.welcomeBonusAmount || 600}
-                        onChange={(e) => handleUpdateSetting('welcomeBonusAmount', Number(e.target.value))}
+                        onChange={(e) => setPlatformSettings({...platformSettings, welcomeBonusAmount: Number(e.target.value)})}
                         placeholder="600"
                       />
                     </div>
@@ -1064,7 +1060,7 @@ export default function AdminApp() {
                       type="checkbox" 
                       className="toggle-checkbox" 
                       checked={platformSettings.isWithdrawalEnabled}
-                      onChange={(e) => handleUpdateSetting('isWithdrawalEnabled', e.target.checked)}
+                      onChange={(e) => setPlatformSettings({...platformSettings, isWithdrawalEnabled: e.target.checked})}
                     />
                   </label>
                   <p className="muted" style={{fontSize: '0.75rem', marginTop: '0.5rem', paddingLeft: '2.5rem'}}>
@@ -1076,7 +1072,7 @@ export default function AdminApp() {
                     <input 
                       type="number" 
                       value={platformSettings.withdrawalFeePercent || 15}
-                      onChange={(e) => handleUpdateSetting('withdrawalFeePercent', Number(e.target.value))}
+                      onChange={(e) => setPlatformSettings({...platformSettings, withdrawalFeePercent: Number(e.target.value)})}
                       placeholder="15"
                     />
                     <p className="muted" style={{fontSize: '0.7rem', marginTop: '0.25rem'}}>Percentage charged per withdrawal transaction.</p>
@@ -1089,18 +1085,22 @@ export default function AdminApp() {
                     <div style={{display:'flex', gap:'1rem', marginTop:'0.5rem'}}>
                       <div style={{flex:1}}>
                         <span style={{fontSize:'0.75rem', color:'#64748b'}}>L1 (Direct)</span>
-                        <input type="number" value={platformSettings.referralL1 || 20} onChange={e => handleUpdateSetting('referralL1', Number(e.target.value))} />
+                        <input type="number" value={platformSettings.referralL1 || 20} onChange={e => setPlatformSettings({...platformSettings, referralL1: Number(e.target.value)})} />
                       </div>
                       <div style={{flex:1}}>
                         <span style={{fontSize:'0.75rem', color:'#64748b'}}>L2 (Indirect)</span>
-                        <input type="number" value={platformSettings.referralL2 || 2} onChange={e => handleUpdateSetting('referralL2', Number(e.target.value))} />
+                        <input type="number" value={platformSettings.referralL2 || 2} onChange={e => setPlatformSettings({...platformSettings, referralL2: Number(e.target.value)})} />
                       </div>
                       <div style={{flex:1}}>
                         <span style={{fontSize:'0.75rem', color:'#64748b'}}>L3 (Indirect)</span>
-                        <input type="number" value={platformSettings.referralL3 || 1} onChange={e => handleUpdateSetting('referralL3', Number(e.target.value))} />
+                        <input type="number" value={platformSettings.referralL3 || 1} onChange={e => setPlatformSettings({...platformSettings, referralL3: Number(e.target.value)})} />
                       </div>
                     </div>
                   </div>
+
+                  <button className="admin-btn-primary" style={{marginTop:'2rem', background: '#16a34a', width: '100%'}} onClick={handleSaveAllSettings}>
+                    Save All Platform Settings
+                  </button>
                 </div>
               </div>
             </div>
@@ -1410,7 +1410,6 @@ export default function AdminApp() {
                   }}>Update Password</button>
                </div>
             </div>
-          </div>
           </div>
         </div>
       )}

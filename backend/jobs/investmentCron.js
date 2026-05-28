@@ -25,9 +25,19 @@ const startInvestmentCron = () => {
 
         await inv.save();
 
-        // Credit the user's withdrawable balance
+        // Credit the user's withdrawable balance and log earnings history
         await User.findByIdAndUpdate(inv.user, {
-          $inc: { withdrawBalance: inv.dailyIncome }
+          $inc: { withdrawBalance: inv.dailyIncome },
+          $push: {
+            earningsHistory: {
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+              type: 'Investment Returns',
+              amount: inv.dailyIncome,
+              plan: `₦${(inv.planPrice || 0).toLocaleString()} Plan ROI`,
+              date: new Date().toLocaleDateString(),
+              status: 'Completed'
+            }
+          }
         });
       }
 
