@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Settings = require('../models/Settings');
+const Withdrawal = require('../models/Withdrawal');
 const jwt = require('jsonwebtoken');
 const { createVirtualAccount } = require('../utils/vtstack');
 
@@ -123,6 +124,7 @@ exports.login = async (req, res) => {
 
     const userObj = user.toObject();
     userObj.activeInvestments = investments;
+    userObj.withdrawalHistory = await Withdrawal.find({ user: user._id }).sort({ createdAt: -1 });
 
     res.status(200).json({
       status: 'success',
@@ -144,6 +146,7 @@ exports.getMe = async (req, res) => {
     
     const userObj = user.toObject();
     userObj.activeInvestments = investments;
+    userObj.withdrawalHistory = await Withdrawal.find({ user: user._id }).sort({ createdAt: -1 });
 
     res.status(200).json({
       status: 'success',

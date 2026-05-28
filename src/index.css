@@ -1083,6 +1083,22 @@ input:focus {
   background: #f0fdf4;
   padding: 0.15rem 0.5rem;
   border-radius: 99px;
+  text-transform: capitalize;
+}
+
+.earn-badge.pending {
+  color: #d97706;
+  background: #fffbeb;
+}
+
+.earn-badge.rejected {
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.earn-badge.failed {
+  color: #dc2626;
+  background: #fef2f2;
 }
 
 /* ── Withdraw – Name Resolve Box ── */

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Home, TrendingUp, Users, User, ArrowLeft, LogOut, Copy, Gift, Shield, Eye, EyeOff, Rocket, Wallet, CreditCard, Clock, Check, ArrowDownCircle, BarChart2, X, PlusCircle, ChevronRight, MessageSquare, Headset, Send, Bell, Share2, Ticket } from 'lucide-react'
 
-const API_URL = 'https://api.oncolos.com.ng/api';
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.')
+  ? `http://${window.location.hostname}:5000/api`
+  : 'https://api.oncolos.com.ng/api';
 
 function App() {
   const [view, setView] = useState('login');
@@ -1539,21 +1541,43 @@ function App() {
             </div>
 
             <div className="earnings-list">
-              {(user?.earningsHistory || []).map((entry) => (
-                <div key={entry.id} className="earning-item">
-                  <div className="earning-icon-wrap">
-                    <BarChart2 size={18} />
+              {[
+                ...(user?.earningsHistory || []).map(e => ({ ...e, category: 'income' })),
+                ...(user?.withdrawalHistory || []).map(w => ({
+                  id: w._id,
+                  type: 'Withdrawal',
+                  amount: w.amount,
+                  plan: `${w.bank} • ${w.accountNumber}`,
+                  date: new Date(w.createdAt).toLocaleDateString(),
+                  status: w.status,
+                  category: 'withdrawal',
+                  rawDate: w.createdAt
+                }))
+              ]
+              .sort((a, b) => new Date(b.rawDate || a.date) - new Date(a.rawDate || b.date))
+              .map((entry, idx) => (
+                <div key={entry.id || idx} className="earning-item">
+                  <div className={`earning-icon-wrap ${entry.category === 'withdrawal' ? 'withdraw' : ''}`} style={{ 
+                    background: entry.category === 'withdrawal' ? '#fee2e2' : 'var(--primary-light)',
+                    color: entry.category === 'withdrawal' ? '#dc2626' : 'var(--primary)'
+                  }}>
+                    {entry.category === 'withdrawal' ? <ArrowDownCircle size={18} /> : <BarChart2 size={18} />}
                   </div>
                   <div style={{ flex: 1 }}>
                     <p style={{ fontWeight: '600', fontSize: '0.9375rem' }}>{entry.type}</p>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{entry.plan} &bull; {entry.date}</p>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <p style={{ fontWeight: '700', color: '#10b981' }}>+₦{entry.amount.toLocaleString()}</p>
-                    <span className="earn-badge">{entry.status}</span>
+                    <p style={{ fontWeight: '700', color: entry.category === 'withdrawal' ? (entry.status === 'Rejected' ? '#64748b' : '#dc2626') : '#10b981' }}>
+                      {entry.category === 'withdrawal' ? (entry.status === 'Rejected' ? '' : '-') : '+'}₦{entry.amount.toLocaleString()}
+                    </p>
+                    <span className={`earn-badge ${entry.status.toLowerCase()}`}>{entry.status}</span>
                   </div>
                 </div>
               ))}
+              {(!user?.earningsHistory?.length && !user?.withdrawalHistory?.length) && (
+                <div className="empty-state">No transactions found.</div>
+              )}
             </div>
           </div>
         </div>

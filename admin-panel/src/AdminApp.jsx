@@ -77,7 +77,9 @@ export default function AdminApp() {
   const [showPass, setShowPass] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
 
-  const API_BASE = 'https://api.oncolos.com.ng/api/admin';
+  const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.')
+    ? `http://${window.location.hostname}:5000/api/admin`
+    : 'https://api.oncolos.com.ng/api/admin';
 
   useEffect(() => {
     const token = localStorage.getItem('oncolos_admin_token');
