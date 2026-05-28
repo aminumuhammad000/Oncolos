@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Home, TrendingUp, Users, User, ArrowLeft, LogOut, Copy, Gift, Shield, Eye, EyeOff, Rocket, Wallet, CreditCard, Clock, Check, ArrowDownCircle, BarChart2, X, PlusCircle, ChevronRight, MessageSquare, Headset, Send, Bell, Share2 } from 'lucide-react'
+import { Home, TrendingUp, Users, User, ArrowLeft, LogOut, Copy, Gift, Shield, Eye, EyeOff, Rocket, Wallet, CreditCard, Clock, Check, ArrowDownCircle, BarChart2, X, PlusCircle, ChevronRight, MessageSquare, Headset, Send, Bell, Share2, Ticket } from 'lucide-react'
 
 const API_URL = 'https://api.oncolos.com.ng/api';
 
@@ -49,6 +49,37 @@ function App() {
   const [realBanks, setRealBanks] = useState([]);
   const [rechargeAmount, setRechargeAmount] = useState(2500);
   const [rechargeStep, setRechargeStep] = useState('select'); // 'select' or 'pay'
+  const [redeemCode, setRedeemCode] = useState('');
+  const [redeemLoading, setRedeemLoading] = useState(false);
+
+  const handleRedeem = async (e) => {
+    e.preventDefault();
+    if (!redeemCode) return;
+    setRedeemLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/users/redeem-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('oncolos_token')}`
+        },
+        body: JSON.stringify({ code: redeemCode.trim() })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccessAlert({ title: 'Success!', message: data.message });
+        setUser(prev => ({ ...prev, balance: data.newBalance }));
+        setRedeemCode('');
+        setView('dashboard');
+      } else {
+        throw new Error(data.message || 'Redemption failed');
+      }
+    } catch (err) {
+      setErrorAlert({ title: 'Redeem Failed', message: err.message });
+    } finally {
+      setRedeemLoading(false);
+    }
+  };
 
   const hasClaimedToday = user?.lastClaimed && (new Date() - new Date(user.lastClaimed)) < (23 * 60 * 60 * 1000);
 
@@ -704,6 +735,10 @@ function App() {
               <div className="qa-icon" style={{ background: '#f0f9ff', color: '#0ea5e9' }}><Headset size={22} /></div>
               <span>Support</span>
             </button>
+            <button className="quick-action-item" onClick={() => setView('redeem')}>
+              <div className="qa-icon" style={{ background: '#fef3c7', color: '#d97706' }}><Ticket size={22} /></div>
+              <span>Redeem</span>
+            </button>
           </div>
 
           <div className="refer-banner" onClick={() => setView('referral')}>
@@ -1166,7 +1201,7 @@ function App() {
                 <h4 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '1.25rem' }}>Referral Rules</h4>
 
                 <div className="rule-step" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyCenter: 'center', fontSize: '0.75rem', fontWeight: '800', flexShrink: 0, justifyContent: 'center' }}>1</div>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '800', flexShrink: 0 }}>1</div>
                   <div>
                     <h5 style={{ fontSize: '0.9375rem', fontWeight: '700', marginBottom: '0.25rem' }}>Invite Friends</h5>
                     <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>Share your unique referral link or code with your friends and family via social media or messengers.</p>
@@ -1524,8 +1559,81 @@ function App() {
         </div>
       )}
 
+      {/* Redeem Page */}
+      {view === 'redeem' && (
+        <div className="glass-card dash-view fade-in">
+          <div className="profile-nav">
+            <button className="back-btn" onClick={() => setView('dashboard')}>
+              <ArrowLeft size={20} /> Back
+            </button>
+          </div>
+          <div style={{ padding: '0 0.5rem', textAlign: 'center' }}>
+            <div style={{
+              width: '80px',
+              height: '80px',
+              background: 'var(--primary-light)',
+              color: 'var(--primary)',
+              borderRadius: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1.5rem',
+              transform: 'rotate(-10deg)',
+              boxShadow: '0 10px 20px rgba(99, 102, 241, 0.1)'
+            }}>
+              <Ticket size={40} />
+            </div>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: '800', marginBottom: '0.5rem' }}>Gift Code</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem', marginBottom: '2rem', lineHeight: '1.5' }}>
+              Enter your official Oncolos gift code below to claim your special bonus reward.
+            </p>
+
+            <form onSubmit={handleRedeem} style={{ maxWidth: '300px', margin: '0 auto' }}>
+              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                <input
+                  type="text"
+                  placeholder="ENTER GIFT CODE"
+                  style={{
+                    textAlign: 'center',
+                    fontSize: '1.25rem',
+                    fontWeight: '800',
+                    letterSpacing: '2px',
+                    textTransform: 'uppercase',
+                    height: '60px',
+                    borderRadius: '15px',
+                    border: '2px solid var(--border)',
+                    background: '#f8fafc'
+                  }}
+                  value={redeemCode}
+                  onChange={(e) => setRedeemCode(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                style={{ height: '55px', fontSize: '1rem', fontWeight: '700' }}
+                disabled={redeemLoading || !redeemCode}
+              >
+                {redeemLoading ? 'Verifying Code...' : 'Redeem Reward'}
+              </button>
+            </form>
+
+            <div style={{ marginTop: '2.5rem', padding: '1.25rem', background: '#f0f9ff', borderRadius: '15px', border: '1px solid #bae6fd', textAlign: 'left' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <Gift size={20} color="#0369a1" />
+                <h4 style={{ color: '#0369a1', fontWeight: '700' }}>Where to find codes?</h4>
+              </div>
+              <p style={{ fontSize: '0.8125rem', color: '#0c4a6e', lineHeight: '1.6' }}>
+                Codes are shared daily on our official Telegram channel and during special community events. Make sure you follow us to stay updated!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bottom Navigation for Mobile */}
-      {['dashboard', 'profile', 'referral', 'stock', 'withdraw', 'earnings'].includes(view) && (
+      {['dashboard', 'profile', 'referral', 'stock', 'withdraw', 'earnings', 'redeem', 'recharge', 'support'].includes(view) && (
         <nav className="bottom-nav">
           <button className={`nav-item ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>
             <Home size={22} className="nav-icon" />

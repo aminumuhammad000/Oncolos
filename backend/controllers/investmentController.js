@@ -22,6 +22,7 @@ const distributeCommissions = async (user, amount) => {
 
         const commission = amount * config.percentage;
         parent.balance += commission;
+        parent.withdrawBalance += commission;
         parent.referralRewards += commission;
 
         // Record in earnings history
@@ -72,6 +73,7 @@ exports.buyInvestment = async (req, res) => {
     // Also push to user's local array for quick dashboard viewing
     user.activeInvestments.push(investment);
     user.balance -= planPrice;
+    user.withdrawBalance -= planPrice;
     await user.save();
 
     // Distribute Commissions

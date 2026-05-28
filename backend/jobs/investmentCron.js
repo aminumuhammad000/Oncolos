@@ -27,7 +27,10 @@ const startInvestmentCron = () => {
 
         // Credit the user's withdrawable balance and log earnings history
         await User.findByIdAndUpdate(inv.user, {
-          $inc: { withdrawBalance: inv.dailyIncome },
+          $inc: { 
+            balance: inv.dailyIncome,
+            withdrawBalance: inv.dailyIncome 
+          },
           $push: {
             earningsHistory: {
               id: Date.now().toString() + Math.random().toString(36).substr(2, 5),

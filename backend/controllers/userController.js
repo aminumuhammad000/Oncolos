@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Settings = require('../models/Settings');
+const Promotion = require('../models/Promotion');
 const { createVirtualAccount, getBanks, verifyBankAccount } = require('../utils/vtstack');
 
 exports.claimDailyBonus = async (req, res) => {
@@ -23,6 +24,7 @@ exports.claimDailyBonus = async (req, res) => {
 
     const bonus = 30;
     user.balance += bonus;
+    user.withdrawBalance += bonus;
     user.lastClaimed = new Date();
     
     user.earningsHistory.push({
@@ -186,6 +188,7 @@ exports.requestWithdrawal = async (req, res) => {
 
         // 2. Deduct balance and create withdrawal record
         user.balance -= amount;
+        user.withdrawBalance -= amount;
         await user.save();
 
         const withdrawal = await require('../models/Withdrawal').create({
@@ -204,6 +207,54 @@ exports.requestWithdrawal = async (req, res) => {
             success: true,
             message: 'Withdrawal request submitted successfully',
             withdrawal,
+            newBalance: user.balance
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+exports.redeemCode = async (req, res) => {
+    try {
+        const { code } = req.body;
+        if (!code) return res.status(400).json({ message: 'Code is required' });
+
+        const promo = await Promotion.findOne({ promoCode: code.toUpperCase(), isActive: true });
+        if (!promo) return res.status(404).json({ message: 'Invalid or expired gift code' });
+
+        if (promo.maxRedemptions > 0 && promo.totalRedeemed >= promo.maxRedemptions) {
+            return res.status(400).json({ message: 'This gift code has reached its maximum redemptions' });
+        }
+
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Check if user already redeemed this specific code (optional, but good practice)
+        const alreadyRedeemed = user.earningsHistory.some(h => h.plan === `Gift Code: ${code.toUpperCase()}`);
+        if (alreadyRedeemed) {
+            return res.status(400).json({ message: 'You have already redeemed this gift code' });
+        }
+
+        const bonus = promo.bonusAmount || 0;
+        user.balance += bonus;
+        user.withdrawBalance += bonus;
+        
+        user.earningsHistory.push({
+            id: Date.now().toString(),
+            type: 'Gift Reward',
+            amount: bonus,
+            plan: `Gift Code: ${code.toUpperCase()}`,
+            date: new Date().toLocaleDateString(),
+            status: 'Completed'
+        });
+
+        promo.totalRedeemed += 1;
+        await promo.save();
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Congratulations! You received ₦${bonus.toLocaleString()} bonus.`,
             newBalance: user.balance
         });
     } catch (err) {

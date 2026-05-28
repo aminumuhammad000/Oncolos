@@ -8,6 +8,7 @@ router.post('/generate-virtual-account', protect, generateVirtualAccount);
 router.get('/banks', protect, getBankList);
 router.post('/verify-account', protect, verifyBankAccount);
 router.post('/update-password', protect, updatePassword);
+router.post('/redeem-code', protect, require('../controllers/userController').redeemCode);
 router.post('/read-messages', protect, require('../controllers/userController').readMessages);
 router.post('/request-withdrawal', protect, require('../controllers/userController').requestWithdrawal);
 

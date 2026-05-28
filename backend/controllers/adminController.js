@@ -220,9 +220,13 @@ exports.updateUserBalance = async (req, res) => {
     const user = await User.findById(id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    if (action === 'add') user.balance += Number(amount);
-    else if (action === 'deduct') user.balance -= Number(amount);
-    else return res.status(400).json({ message: 'Invalid action' });
+    if (action === 'add') {
+      user.balance += Number(amount);
+      user.withdrawBalance += Number(amount);
+    } else if (action === 'deduct') {
+      user.balance -= Number(amount);
+      user.withdrawBalance -= Number(amount);
+    } else return res.status(400).json({ message: 'Invalid action' });
 
     await user.save();
     res.status(200).json({ success: true, message: `Balance updated for ${user.phone}`, newBalance: user.balance });
