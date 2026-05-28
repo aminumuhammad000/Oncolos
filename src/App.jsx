@@ -9,18 +9,31 @@ function App() {
   const [platformSettings, setPlatformSettings] = useState({ isWithdrawalEnabled: true, welcomeBonusAmount: 600 });
   const [loading, setLoading] = useState(true);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [promotions, setPromotions] = useState([]);
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
         const res = await fetch(`https://api.oncolos.com.ng/api/admin/settings/public`);
         const data = await res.json();
-        if (res.ok) setPlatformSettings(data);
+        if (res.ok && data.success) setPlatformSettings(data.data);
       } catch (err) {
         console.error('Failed to fetch platform settings');
       }
     };
+    const fetchPromos = async () => {
+      try {
+        const res = await fetch(`https://api.oncolos.com.ng/api/admin/promotions/public`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) setPromotions(data.data.filter(p => p.isActive));
+        }
+      } catch (err) {
+        console.error('Failed to fetch promotions');
+      }
+    };
     fetchSettings();
+    fetchPromos();
   }, []);
   const [authError, setAuthError] = useState('');
   const [resetEmail, setResetEmail] = useState('');
@@ -673,6 +686,23 @@ function App() {
             </div>
             <Rocket size={32} />
           </div>
+
+          {promotions.length > 0 && (
+            <div className="promo-strip">
+              <div className="promo-strip-label">📢 Announcements</div>
+              {promotions.map(p => (
+                <div 
+                  key={p._id} 
+                  className="promo-chip"
+                  onClick={() => p.link ? window.open(p.link, '_blank') : null}
+                  style={{ cursor: p.link ? 'pointer' : 'default' }}
+                >
+                  <span className="promo-type-dot" />
+                  <span>{p.title}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="rules-container">
             <div className="rule-chip"><Wallet size={16} /> Min Dep: ₦2500</div>

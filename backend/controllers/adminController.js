@@ -3,6 +3,45 @@ const Investment = require('../models/Investment');
 const Withdrawal = require('../models/Withdrawal');
 const Deposit = require('../models/Deposit');
 const Settings = require('../models/Settings');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+
+const signToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET || 'your_jwt_secret', {
+    expiresIn: process.env.JWT_EXPIRES_IN || '30d'
+  });
+};
+
+exports.loginAsUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const token = signToken(user._id);
+    res.status(200).json({ success: true, token });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.changeUserPassword = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { newPassword } = req.body;
+    if (!newPassword) return res.status(400).json({ message: 'New password required' });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.password = newPassword;
+    await user.save(); // User model handles hashing via pre-save
+
+    res.status(200).json({ success: true, message: 'Password updated successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
 exports.getDashboardStats = async (req, res) => {
   try {
@@ -12,6 +51,8 @@ exports.getDashboardStats = async (req, res) => {
     const totalBalance = users.reduce((acc, user) => acc + (user.balance || 0), 0);
     
     const pendingWithdrawals = await Withdrawal.countDocuments({ status: 'Pending' });
+    const recentUsers = await User.find().sort({ createdAt: -1 }).limit(5);
+    const pendingWithdrawalsData = await Withdrawal.find({ status: 'Pending' }).populate('user', 'name email phone').sort({ createdAt: -1 }).limit(5);
 
     res.status(200).json({
       success: true,
@@ -19,7 +60,9 @@ exports.getDashboardStats = async (req, res) => {
         totalUsers,
         activeInvestments,
         totalBalance,
-        pendingWithdrawals
+        pendingWithdrawalsCount: pendingWithdrawals,
+        recentUsers,
+        pendingWithdrawals: pendingWithdrawalsData
       }
     });
   } catch (err) {
@@ -215,10 +258,74 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+const Promotion = require('../models/Promotion');
+
 exports.getAllDeposits = async (req, res) => {
   try {
     const deposits = await Deposit.find().populate('user', 'name phone email').sort({ createdAt: -1 });
     res.status(200).json({ success: true, data: deposits });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// VIP Management
+exports.getVIPUsers = async (req, res) => {
+  try {
+    const users = await User.find({ vipLevel: { $gt: 0 } }).sort({ vipLevel: -1 });
+    res.status(200).json({ success: true, data: users });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.updateVIPLevel = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { vipLevel } = req.body;
+    const user = await User.findByIdAndUpdate(id, { vipLevel }, { new: true });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.status(200).json({ success: true, message: `VIP level updated to ${vipLevel}`, data: user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Promotion Management
+exports.getAllPromotions = async (req, res) => {
+  try {
+    const promotions = await Promotion.find().sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: promotions });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.createPromotion = async (req, res) => {
+  try {
+    const promotion = await Promotion.create(req.body);
+    res.status(201).json({ success: true, data: promotion });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.updatePromotion = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const promotion = await Promotion.findByIdAndUpdate(id, req.body, { new: true });
+    if (!promotion) return res.status(404).json({ message: 'Promotion not found' });
+    res.status(200).json({ success: true, data: promotion });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.deletePromotion = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Promotion.findByIdAndDelete(id);
+    res.status(200).json({ success: true, message: 'Promotion deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

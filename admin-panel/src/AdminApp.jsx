@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import {
   LayoutDashboard, Users, TrendingUp, ArrowDownCircle,
   Settings, LogOut, ChevronRight, CheckCircle, XCircle,
-  CreditCard, Shield, Key, Bell, Search, MoreVertical, Mail, Gift
+  CreditCard, Shield, Key, Bell, Search, MoreVertical, Mail, Gift, Crown, Megaphone,
+  Plus, Minus, Wallet, Eye, Trash2, LogIn, Lock, EyeOff
 } from 'lucide-react'
 
 
@@ -60,12 +61,20 @@ export default function AdminApp() {
   const [balanceModal, setBalanceModal] = useState(null); // { userId, userName, action: 'add'|'deduct' }
   const [balanceAmount, setBalanceAmount] = useState('');
   const [balanceLoading, setBalanceLoading] = useState(false);
+  const [promoModal, setPromoModal] = useState(null); // { id, title, description, type, isActive }
+  const [promoForm, setPromoForm] = useState({ title: '', description: '', type: 'News', isActive: true, imageUrl: '', link: '' });
 
   const [stats, setStats] = useState({ totalUsers: 0, activeInvestments: 0, totalBalance: 0, pendingWithdrawals: 0 });
   const [users, setUsers] = useState([]);
+  const [vipUsers, setVipUsers] = useState([]);
+  const [promotions, setPromotions] = useState([]);
   const [investments, setInvestments] = useState([]);
   const [referrals, setReferrals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState('All');
+  const [filterKYC, setFilterKYC] = useState('All');
+  const [passModal, setPassModal] = useState(null); // { userId, userName }
+  const [showPass, setShowPass] = useState(false);
 
   const API_BASE = 'https://api.oncolos.com.ng/api/admin';
 
@@ -82,6 +91,14 @@ export default function AdminApp() {
     }
   }, [section, view]);
 
+  const safeJson = async (res) => {
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      throw new Error(`Server error (${res.status}): unexpected response format`);
+    }
+    return res.json();
+  };
+
   const fetchData = async () => {
     setLoading(true);
     const token = localStorage.getItem('oncolos_admin_token');
@@ -92,55 +109,117 @@ export default function AdminApp() {
         const res = await fetch(`${API_BASE}/stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await res.json();
-        if (data.success) setStats(data.data);
+        const data = await safeJson(res);
+        if (data.success) {
+          setStats(data.data);
+          if (data.data.recentUsers) setUsers(data.data.recentUsers);
+          if (data.data.pendingWithdrawals) setWithdrawals(data.data.pendingWithdrawals);
+        }
       }
       if (section === 'users') {
         const res = await fetch(`${API_BASE}/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await res.json();
+        const data = await safeJson(res);
         if (data.success) setUsers(data.data);
       }
       if (section === 'investments') {
         const res = await fetch(`${API_BASE}/investments`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await res.json();
+        const data = await safeJson(res);
         if (data.success) setInvestments(data.data);
       }
       if (section === 'referrals') {
         const res = await fetch(`${API_BASE}/referrals`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await res.json();
+        const data = await safeJson(res);
         if (data.success) setReferrals(data.data);
       }
       if (section === 'withdrawals') {
         const res = await fetch(`${API_BASE}/withdrawals`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await res.json();
+        const data = await safeJson(res);
         if (data.success) setWithdrawals(data.data);
       }
       if (section === 'deposits') {
         const res = await fetch(`${API_BASE}/deposits`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await res.json();
+        const data = await safeJson(res);
         if (data.success) setDeposits(data.data);
       }
       if (section === 'settings') {
         const res = await fetch(`${API_BASE}/settings`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await res.json();
+        const data = await safeJson(res);
         if (data.success) setPlatformSettings(data.data);
+      }
+      if (section === 'vip') {
+        const res = await fetch(`${API_BASE}/vip`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await safeJson(res);
+        if (data.success) setVipUsers(data.data);
+      }
+      if (section === 'promo') {
+        const res = await fetch(`${API_BASE}/promotions`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await safeJson(res);
+        if (data.success) setPromotions(data.data);
       }
     } catch (err) {
       console.error('Fetch error:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateVIP = async (userId, vipLevel) => {
+    try {
+      const res = await fetch(`${API_BASE}/users/${userId}/vip`, {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('oncolos_admin_token')}`
+        },
+        body: JSON.stringify({ vipLevel: Number(vipLevel) })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsers(prev => prev.map(u => u._id === userId ? { ...u, vipLevel: Number(vipLevel) } : u));
+        setVipUsers(prev => prev.map(u => u._id === userId ? { ...u, vipLevel: Number(vipLevel) } : u));
+        alert('VIP level updated!');
+      }
+    } catch (err) {
+      console.error('Failed to update VIP:', err);
+      alert('Error updating VIP');
+    }
+  };
+
+  const handlePromoAction = async (method, id = null, body = null) => {
+    try {
+      const url = id ? `${API_BASE}/promotions/${id}` : `${API_BASE}/promotions`;
+      const res = await fetch(url, {
+        method,
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('oncolos_admin_token')}`
+        },
+        body: body ? JSON.stringify(body) : null
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchData(); // Refresh promos
+        if (method !== 'GET') alert('Promotion updated successfully!');
+      }
+    } catch (err) {
+      console.error('Promo action failed:', err);
+      alert('Error updating promotion');
     }
   };
 
@@ -287,6 +366,8 @@ export default function AdminApp() {
     { id: 'deposits',    label: 'User Payments',  icon: CreditCard },
     { id: 'withdrawals', label: 'Withdrawals',   icon: ArrowDownCircle },
     { id: 'investments', label: 'Investments',   icon: TrendingUp },
+    { id: 'vip',         label: 'VIP Section',   icon: Crown },
+    { id: 'promo',       label: 'Promotions',    icon: Megaphone },
     { id: 'referrals',   label: 'Referrals',     icon: ChevronRight },
     { id: 'settings',    label: 'Platform Settings', icon: Settings },
   ];
@@ -323,6 +404,46 @@ export default function AdminApp() {
   const handleLogout = () => {
     localStorage.removeItem('oncolos_admin_token');
     setView('login');
+  };
+
+  const handleLoginAsUser = async (userId) => {
+    try {
+      const token = localStorage.getItem('oncolos_admin_token');
+      const res = await fetch(`${API_BASE}/users/${userId}/login-as`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Redirect to main app with user token
+        // In a real scenario, you might want to open in a new tab
+        window.open(`https://oncolos.com.ng/login?token=${data.token}`, '_blank');
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  };
+
+  const handleChangePassword = async (userId, newPassword) => {
+    try {
+      const token = localStorage.getItem('oncolos_admin_token');
+      const res = await fetch(`${API_BASE}/users/${userId}/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ newPassword })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Password changed successfully');
+        setPassModal(null);
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
   };
 
   if (view === 'login') {
@@ -414,7 +535,7 @@ export default function AdminApp() {
                 <StatCard label="Total Users"       value={stats.totalUsers}        icon={Users}            color="#2563eb" />
                 <StatCard label="Active Investments" value={stats.activeInvestments} icon={TrendingUp}       color="#16a34a" />
                 <StatCard label="Total Balance (₦)" value={`₦${stats.totalBalance.toLocaleString()}`} icon={CreditCard} color="#7c3aed" />
-                <StatCard label="Pending Withdrawals" value={stats.pendingWithdrawals} icon={ArrowDownCircle} color="#ea580c" />
+                <StatCard label="Pending Withdrawals" value={stats.pendingWithdrawalsCount || 0} icon={ArrowDownCircle} color="#ea580c" />
               </div>
 
               <div className="dash-grid-2">
@@ -465,33 +586,82 @@ export default function AdminApp() {
 
           {/* ── Wallet Management ── */}
           {section === 'wallet' && (
-            <div>
-              <h1 className="page-title">Wallet Management</h1>
-              <div className="admin-card" style={{maxWidth: '800px'}}>
-                <p className="muted" style={{marginBottom: '1.5rem'}}>Search for a user to credit or deduct their balance manually.</p>
+            <div className="animate-in">
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: '1.5rem'}}>
+                <h1 className="page-title" style={{margin:0}}>Wallet Management</h1>
+                <div className="wallet-mini-stat">
+                  <Wallet size={16} />
+                  <span>Total Platform Liquidity: <strong>₦{stats.totalBalance?.toLocaleString()}</strong></span>
+                </div>
+              </div>
+
+              <div className="admin-card">
+                <div className="wallet-header-tools">
+                   <div className="search-pill">
+                      <Search size={18} />
+                      <input 
+                        placeholder="Search user by name or phone..." 
+                        value={search} 
+                        onChange={e => setSearch(e.target.value)} 
+                      />
+                   </div>
+                   <p className="muted">Directly manage user balances for corrections or bonuses.</p>
+                </div>
                 
                 <div className="table-responsive">
-                  <table className="admin-table">
-                    <thead><tr><th>User</th><th>Phone</th><th>Balance</th><th>Actions</th></tr></thead>
+                  <table className="admin-table wallet-table">
+                    <thead>
+                      <tr>
+                        <th>User Profile</th>
+                        <th>Current Balance</th>
+                        <th style={{textAlign:'right'}}>Manual Adjustment</th>
+                      </tr>
+                    </thead>
                     <tbody>
                       {users
                         .filter(u => {
                            const term = search.toLowerCase();
                            return !term || (u.name || '').toLowerCase().includes(term) || (u.phone || '').includes(term);
                         })
-                        .slice(0, 10).map(u => (
-                        <tr key={u._id}>
-                          <td className="fw600">{u.name || u.phone}</td>
-                          <td>{u.phone}</td>
-                          <td>₦{u.balance?.toLocaleString()}</td>
+                        .slice(0, 20).map(u => (
+                        <tr key={u._id} className="wallet-row-animate">
                           <td>
-                            <div style={{display:'flex', gap:'0.5rem'}}>
-                              <button className="btn btn-primary" style={{fontSize:'0.75rem', height:'32px', background:'#16a34a', border:'none'}} onClick={() => setBalanceModal({ userId: u._id, userName: u.name || u.phone, action: 'add' })}>Credit</button>
-                              <button className="btn btn-primary" style={{fontSize:'0.75rem', height:'32px', background:'#dc2626', border:'none'}} onClick={() => setBalanceModal({ userId: u._id, userName: u.name || u.phone, action: 'deduct' })}>Deduct</button>
+                            <div className="user-info-cell">
+                               <div className="user-avatar-sm">{u.name?.charAt(0) || 'U'}</div>
+                               <div>
+                                  <div className="fw600">{u.name || 'User'}</div>
+                                  <div className="muted" style={{fontSize:'0.75rem'}}>{u.phone}</div>
+                               </div>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="balance-tag">
+                               ₦{u.balance?.toLocaleString()}
+                            </div>
+                          </td>
+                          <td>
+                            <div style={{display:'flex', gap:'0.75rem', justifyContent:'flex-end'}}>
+                              <button 
+                                className="wallet-action-btn credit" 
+                                onClick={() => setBalanceModal({ userId: u._id, userName: u.name || u.phone, action: 'add' })}
+                                title="Credit Wallet"
+                              >
+                                <Plus size={18} />
+                                <span>Credit</span>
+                              </button>
+                              <button 
+                                className="wallet-action-btn deduct" 
+                                onClick={() => setBalanceModal({ userId: u._id, userName: u.name || u.phone, action: 'deduct' })}
+                                title="Deduct Wallet"
+                              >
+                                <Minus size={18} />
+                                <span>Deduct</span>
+                              </button>
                             </div>
                           </td>
                         </tr>
                       ))}
+                      {users.length === 0 && <tr><td colSpan="3" style={{textAlign:'center', padding:'3rem'}} className="muted">No users found match your search.</td></tr>}
                     </tbody>
                   </table>
                 </div>
@@ -506,20 +676,25 @@ export default function AdminApp() {
               <div className="admin-card">
                  <div className="table-responsive">
                     <table className="admin-table">
-                      <thead><tr><th>#</th><th>User</th><th>Amount</th><th>Reference</th><th>Channel</th><th>Date</th><th>Status</th></tr></thead>
+                      <thead><tr><th>#</th><th>User</th><th>Amount</th><th>Reference</th><th>Channel</th><th>Date</th><th>Status</th><th style={{textAlign:'right'}}>Actions</th></tr></thead>
                       <tbody>
                         {deposits.map((d, i) => (
                            <tr key={d._id}>
                              <td className="muted">{i+1}</td>
                              <td className="fw600">{d.user?.name || d.user?.phone || 'Unknown'}</td>
-                             <td>₦{d.amount.toLocaleString()}</td>
+                             <td>₦{d.amount?.toLocaleString()}</td>
                              <td style={{fontSize:'0.75rem'}} className="muted">{d.reference}</td>
                              <td>{d.channel}</td>
-                             <td className="muted">{new Date(d.createdAt).toLocaleString()}</td>
+                             <td className="muted">{new Date(d.createdAt).toLocaleDateString()}</td>
                              <td><Badge status="Completed" /></td>
+                             <td>
+                               <div style={{display:'flex', gap:'0.5rem', justifyContent:'flex-end'}}>
+                                  <button className="action-btn approve" onClick={() => { if(d.user) setSelectedUser(d.user); }} title="View User Profile"><Eye size={14}/></button>
+                               </div>
+                             </td>
                            </tr>
                         ))}
-                        {deposits.length === 0 && <tr><td colSpan="7" style={{textAlign:'center', padding:'2rem'}} className="muted">No payments found yet.</td></tr>}
+                        {deposits.length === 0 && <tr><td colSpan="8" style={{textAlign:'center', padding:'2rem'}} className="muted">No payments found yet.</td></tr>}
                       </tbody>
                     </table>
                  </div>
@@ -532,30 +707,61 @@ export default function AdminApp() {
             <div>
               <h1 className="page-title">All Users</h1>
               <div className="admin-card">
+                <div style={{display:'flex', gap:'1rem', marginBottom:'1.5rem', flexWrap:'wrap'}}>
+                   <div className="search-pill" style={{maxWidth:'300px'}}>
+                      <Search size={18} />
+                      <input placeholder="Search users..." value={search} onChange={e => setSearch(e.target.value)} />
+                   </div>
+                   <select className="filter-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                      <option value="All">All Status</option>
+                      <option value="Active">Active</option>
+                      <option value="Banned">Banned</option>
+                   </select>
+                   <select className="filter-select" value={filterKYC} onChange={e => setFilterKYC(e.target.value)}>
+                      <option value="All">All KYC</option>
+                      <option value="verified">Verified</option>
+                      <option value="unverified">Unverified</option>
+                   </select>
+                </div>
+
                 <div className="table-responsive">
                   <table className="admin-table">
-                  <thead><tr><th>#</th><th>Name / Email</th><th>Phone</th><th>Email</th><th>Balance</th><th>Investments</th><th>Joined</th><th>Status</th></tr></thead>
+                  <thead><tr><th>#</th><th>Name / Email</th><th>Phone</th><th>Balance</th><th>Joined</th><th>Status</th><th style={{textAlign:'right'}}>Actions</th></tr></thead>
                     <tbody>
                     {users
                       .filter(u => {
                         const term = search.toLowerCase();
-                        return !term ||
+                        const matchesSearch = !term ||
                           (u.name || '').toLowerCase().includes(term) ||
                           (u.phone || '').includes(term) ||
                           (u.email || '').toLowerCase().includes(term);
+                        
+                        const matchesStatus = filterStatus === 'All' || u.status === filterStatus;
+                        const matchesKYC = filterKYC === 'All' || (u.kycStatus || 'unverified') === filterKYC;
+
+                        return matchesSearch && matchesStatus && matchesKYC;
                       })
                       .map((u, i) => {
                         const label = u.name && u.name !== 'User' ? u.name : (u.email || u.phone || '—');
                         return (
-                          <tr key={u._id} onClick={() => setSelectedUser(u)} style={{cursor: 'pointer'}}>
+                          <tr key={u._id}>
                             <td className="muted">{i + 1}</td>
-                            <td className="fw600">{label}</td>
+                            <td>
+                               <div className="user-info-cell">
+                                  <div className="fw600">{label}</div>
+                                  {u.email && <div className="muted" style={{fontSize:'0.7rem'}}>{u.email}</div>}
+                               </div>
+                            </td>
                             <td>{u.phone || '—'}</td>
-                            <td>{u.email || '—'}</td>
                             <td>₦{(u.balance || 0).toLocaleString()}</td>
-                            <td>{(u.activeInvestments || []).length}</td>
                             <td className="muted">{new Date(u.createdAt).toLocaleDateString()}</td>
-                            <td><Badge status={u.kycStatus || 'unverified'} /></td>
+                            <td><Badge status={u.status || 'Active'} /></td>
+                            <td>
+                               <div style={{display:'flex', gap:'0.5rem', justifyContent:'flex-end'}}>
+                                  <button className="action-btn approve" onClick={() => setSelectedUser(u)} title="View Profile"><Eye size={14}/></button>
+                                  <button className="action-btn reject" onClick={() => { if(window.confirm(`Permanently delete ${label}?`)) handleDeleteUser(u._id); }} title="Delete User"><Trash2 size={14}/></button>
+                               </div>
+                            </td>
                           </tr>
                         );
                       })
@@ -574,17 +780,29 @@ export default function AdminApp() {
               <div className="admin-card">
                 <div className="table-responsive">
                   <table className="admin-table">
-                    <thead><tr><th>#</th><th>User</th><th>Plan</th><th>Daily Income</th><th>Days Left</th><th>Earned</th><th>Status</th></tr></thead>
+                    <thead><tr><th>User</th><th>Plan Price</th><th>Daily Income</th><th>Days Left</th><th>Earned</th><th>Status</th><th style={{textAlign:'right'}}>Actions</th></tr></thead>
                     <tbody>
                       {investments.map(inv => (
-                      <tr key={inv._id} onClick={() => setSelectedInvestment(inv)} style={{cursor: 'pointer'}}>
-                        <td className="muted">...</td>
-                        <td className="fw600">{inv.user?.name || 'Unknown'}</td>
-                        <td>₦{inv.planPrice.toLocaleString()}</td>
-                        <td>₦{inv.dailyIncome.toLocaleString()}</td>
-                        <td>{60 - inv.daysElapsed} days</td>
-                        <td>₦{inv.earned.toLocaleString()}</td>
+                      <tr key={inv._id}>
+                        <td>
+                           <div className="user-info-cell">
+                              <div className="user-avatar-sm" style={{background:'#eff6ff', color:'#2563eb'}}><TrendingUp size={14}/></div>
+                              <div>
+                                 <div className="fw600">{inv.user?.name || 'Unknown'}</div>
+                                 <div className="muted" style={{fontSize:'0.7rem'}}>{inv.user?.phone}</div>
+                              </div>
+                           </div>
+                        </td>
+                        <td>₦{inv.planPrice?.toLocaleString()}</td>
+                        <td>₦{inv.dailyIncome?.toLocaleString()}</td>
+                        <td className="muted">{60 - inv.daysElapsed} days</td>
+                        <td className="fw600">₦{inv.earned?.toLocaleString()}</td>
                         <td><Badge status={inv.status} /></td>
+                        <td>
+                           <div style={{display:'flex', gap:'0.5rem', justifyContent:'flex-end'}}>
+                              <button className="action-btn approve" onClick={() => setSelectedInvestment(inv)} title="View Investment Details"><Eye size={14}/></button>
+                           </div>
+                        </td>
                       </tr>
                     ))}
                     </tbody>
@@ -639,12 +857,15 @@ export default function AdminApp() {
                           <td className="muted">{new Date(w.createdAt).toLocaleDateString()}</td>
                           <td><Badge status={w.status} /></td>
                           <td>
-                            {w.status === 'Pending' ? (
-                              <div style={{display:'flex',gap:'0.5rem'}}>
-                                <button className="action-btn approve" onClick={() => handleWithdrawalStatus(w._id, 'Approved')}><CheckCircle size={14}/> Approve</button>
-                                <button className="action-btn reject"  onClick={() => handleWithdrawalStatus(w._id, 'Rejected')}><XCircle size={14}/> Reject</button>
-                              </div>
-                            ) : <span className="muted">—</span>}
+                            <div style={{display:'flex', gap:'0.5rem'}}>
+                               <button className="action-btn approve" style={{background:'#f1f5f9', color:'#475569'}} onClick={() => { if(w.user) setSelectedUser(w.user); }} title="View User Profile"><Eye size={14}/></button>
+                               {w.status === 'Pending' ? (
+                                  <>
+                                    <button className="action-btn approve" onClick={() => handleWithdrawalStatus(w._id, 'Approved')} title="Approve Withdrawal"><CheckCircle size={14}/></button>
+                                    <button className="action-btn reject"  onClick={() => handleWithdrawalStatus(w._id, 'Rejected')} title="Reject Withdrawal"><XCircle size={14}/></button>
+                                  </>
+                               ) : <span className="muted">Processed</span>}
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -875,42 +1096,143 @@ export default function AdminApp() {
             </div>
           )}
 
+          {/* ── VIP Section ── */}
+          {section === 'vip' && (
+            <div>
+              <h1 className="page-title">VIP Management</h1>
+              <div className="admin-card">
+                 <div className="table-responsive">
+                    <table className="admin-table">
+                      <thead><tr><th>User</th><th>Phone</th><th>Balance</th><th>VIP Level</th><th>Actions</th></tr></thead>
+                      <tbody>
+                        {users
+                          .filter(u => {
+                             const term = search.toLowerCase();
+                             return !term || (u.name || '').toLowerCase().includes(term) || (u.phone || '').includes(term);
+                          })
+                          .slice(0, 50).map(u => (
+                          <tr key={u._id}>
+                            <td className="fw600">{u.name || u.phone}</td>
+                            <td>{u.phone}</td>
+                            <td>₦{u.balance?.toLocaleString()}</td>
+                            <td>
+                              <select 
+                                value={u.vipLevel || 0} 
+                                onChange={(e) => handleUpdateVIP(u._id, e.target.value)}
+                                style={{padding:'4px 8px', borderRadius:'6px', border:'1px solid #ddd'}}
+                              >
+                                {[0,1,2,3,4,5,6,7,8,9,10].map(v => <option key={v} value={v}>VIP {v}</option>)}
+                              </select>
+                            </td>
+                            <td>
+                              <Badge status={u.vipLevel > 0 ? 'Verified' : 'Regular'} />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Promotions Section ── */}
+          {section === 'promo' && (
+            <div>
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: '2rem'}}>
+                <h1 className="page-title" style={{margin:0}}>Promotions & News</h1>
+                <button className="admin-btn-primary" onClick={() => { setPromoForm({ title: '', description: '', type: 'News', isActive: true, imageUrl: '', link: '' }); setPromoModal('new'); }}>+ New Promotion</button>
+              </div>
+              
+              <div className="admin-card">
+                 <div className="table-responsive">
+                    <table className="admin-table">
+                      <thead><tr><th>Title</th><th>Type</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+                      <tbody>
+                        {promotions.map(p => (
+                           <tr key={p._id}>
+                             <td className="fw600">{p.title}</td>
+                             <td><Badge status={p.type} /></td>
+                             <td>{p.isActive ? '🟢 Active' : '🔴 Inactive'}</td>
+                             <td className="muted">{new Date(p.createdAt).toLocaleDateString()}</td>
+                             <td>
+                               <div style={{display:'flex', gap:'0.5rem'}}>
+                                 <button className="action-btn approve" onClick={() => { setPromoForm(p); setPromoModal(p._id); }}><Settings size={14}/></button>
+                                 <button className="action-btn reject" onClick={() => { if(window.confirm('Delete promo?')) handlePromoAction('DELETE', p._id); }}><XCircle size={14}/></button>
+                               </div>
+                             </td>
+                           </tr>
+                        ))}
+                        {promotions.length === 0 && <tr><td colSpan="5" style={{textAlign:'center', padding:'2rem'}} className="muted">No promotions found.</td></tr>}
+                      </tbody>
+                    </table>
+                 </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
       {/* ── User Detail Modal ── */}
       {selectedUser && (
         <div className="admin-modal-overlay" onClick={() => setSelectedUser(null)}>
-          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+          <div className="admin-modal" style={{maxWidth: '650px'}} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>User Details</h2>
+              <div style={{display:'flex', alignItems:'center', gap:'0.75rem'}}>
+                 <div className="admin-avatar" style={{width:40, height:40}}>{selectedUser.name?.charAt(0) || 'U'}</div>
+                 <div>
+                    <h2 style={{margin:0}}>{selectedUser.name || 'User Profile'}</h2>
+                    <p className="muted" style={{fontSize:'0.75rem'}}>User ID: {selectedUser._id}</p>
+                 </div>
+              </div>
               <button className="close-btn" onClick={() => setSelectedUser(null)}>×</button>
             </div>
             <div className="modal-body-content">
-              <div className="detail-section">
-                <div className="detail-row"><span>Full Name</span><strong>{selectedUser.name}</strong></div>
-                <div className="detail-row"><span>Phone</span><strong>{selectedUser.phone}</strong></div>
-                <div className="detail-row"><span>BVN</span><strong>{selectedUser.bvn || 'Not provided'}</strong></div>
-                <div className="detail-row"><span>KYC Status</span><Badge status={selectedUser.kycStatus || 'unverified'} /></div>
-                <div className="detail-row"><span>Status</span><Badge status={selectedUser.status} /></div>
-                <div className="detail-row"><span>Joined</span><strong>{new Date(selectedUser.createdAt).toLocaleDateString()}</strong></div>
+              <div className="dash-grid-2">
+                 <div className="detail-section">
+                    <h3>Identification</h3>
+                    <div className="detail-row"><span>Full Name</span><strong>{selectedUser.name}</strong></div>
+                    <div className="detail-row"><span>Phone</span><strong>{selectedUser.phone}</strong></div>
+                    <div className="detail-row"><span>Email</span><strong>{selectedUser.email || '--'}</strong></div>
+                    <div className="detail-row"><span>BVN</span><strong>{selectedUser.bvn || 'Not provided'}</strong></div>
+                    <div className="detail-row"><span>KYC Status</span><Badge status={selectedUser.kycStatus || 'unverified'} /></div>
+                 </div>
+                 <div className="detail-section">
+                    <h3>Account Info</h3>
+                    <div className="detail-row"><span>Status</span><Badge status={selectedUser.status} /></div>
+                    <div className="detail-row"><span>Joined</span><strong>{new Date(selectedUser.createdAt).toLocaleDateString()}</strong></div>
+                    <div className="detail-row"><span>Balance</span><strong>₦{(selectedUser.balance || 0).toLocaleString()}</strong></div>
+                    <div className="detail-row"><span>VIP Level</span><strong>VIP {selectedUser.vipLevel || 0}</strong></div>
+                    <div className="detail-row"><span>Referral Code</span><strong style={{color:'var(--primary)'}}>{selectedUser.referralCode}</strong></div>
+                 </div>
               </div>
-              <div className="detail-section">
-                <h3>Financials</h3>
-                <div className="detail-row"><span>Available Balance</span><strong>₦{(selectedUser.balance || 0).toLocaleString()}</strong></div>
-                <div className="detail-row"><span>Total Investments</span><strong>{(selectedUser.activeInvestments || []).length}</strong></div>
-                <div className="detail-row"><span>Direct Referrals</span><strong>{selectedUser.referralRewards || 0}</strong></div>
+
+              <div className="detail-section" style={{marginTop: '0.5rem'}}>
+                <h3>Security & Access</h3>
+                <div style={{display:'flex', gap:'0.75rem', flexWrap:'wrap'}}>
+                   <button className="action-btn approve" style={{padding:'0.6rem 1rem'}} onClick={() => handleLoginAsUser(selectedUser._id)}>
+                     <LogIn size={16}/> Login as User
+                   </button>
+                   <button className="action-btn reject" style={{padding:'0.6rem 1rem', background:'#f1f5f9', color:'#475569'}} onClick={() => setPassModal({ userId: selectedUser._id, userName: selectedUser.name })}>
+                     <Lock size={16}/> Change Password
+                   </button>
+                </div>
               </div>
-              <div className="modal-actions-admin">
-                 <button className="admin-btn-secondary" onClick={() => handleUpdateKYC(selectedUser._id, 'verified')}>Approve KYC</button>
-                 <button className="admin-btn-primary" style={{background: '#16a34a'}} onClick={() => handleAdjustBalance(selectedUser._id, selectedUser.name || selectedUser.phone)}>💳 Credit Wallet</button>
-                 <button className="admin-btn-primary" style={{background: '#dc2626'}} onClick={() => { setBalanceModal({ userId: selectedUser._id, userName: selectedUser.name || selectedUser.phone, action: 'deduct' }); setBalanceAmount(''); }}>Deduct Wallet</button>
-                 {selectedUser.status === 'Banned' ? (
-                   <button className="admin-btn-secondary" style={{borderColor: '#16a34a', color: '#16a34a'}} onClick={() => handleUpdateStatus(selectedUser._id, 'Active')}>Unban User</button>
-                 ) : (
-                   <button className="admin-btn-secondary" style={{borderColor: '#dc2626', color: '#dc2626'}} onClick={() => handleUpdateStatus(selectedUser._id, 'Banned')}>Ban User</button>
-                 )}
-                 <button className="admin-btn-secondary" style={{background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca'}} onClick={() => handleDeleteUser(selectedUser._id)}>Delete User</button>
+
+              <div className="modal-actions-admin" style={{marginTop: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))'}}>
+                  <button className="admin-btn-secondary" onClick={() => handleUpdateKYC(selectedUser._id, 'verified')}>Approve KYC</button>
+                  <button className="admin-btn-primary" style={{background: '#16a34a'}} onClick={() => handleAdjustBalance(selectedUser._id, selectedUser.name || selectedUser.phone)}>💳 Credit Wallet</button>
+                  <button className="admin-btn-primary" style={{background: '#dc2626'}} onClick={() => { setBalanceModal({ userId: selectedUser._id, userName: selectedUser.name || selectedUser.phone, action: 'deduct' }); setBalanceAmount(''); }}>Deduct Wallet</button>
+                  {selectedUser.status === 'Banned' ? (
+                    <button className="admin-btn-secondary" style={{borderColor: '#16a34a', color: '#16a34a'}} onClick={() => handleUpdateStatus(selectedUser._id, 'Active')}>Unban User</button>
+                  ) : (
+                    <button className="admin-btn-secondary" style={{borderColor: '#dc2626', color: '#dc2626'}} onClick={() => handleUpdateStatus(selectedUser._id, 'Banned')}>Ban User</button>
+                  )}
+                  <button className="admin-btn-secondary" style={{background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca'}} onClick={() => { if(window.confirm('Delete user permanently?')) handleDeleteUser(selectedUser._id); }}>Delete User</button>
+              </div>
+              
+              <div style={{marginTop:'1.5rem', textAlign:'center'}}>
+                 <button className="muted" style={{background:'none', border:'none', cursor:'pointer', textDecoration:'underline'}} onClick={() => setSelectedUser(null)}>Close Window</button>
               </div>
             </div>
           </div>
@@ -927,14 +1249,16 @@ export default function AdminApp() {
             </div>
             <div className="modal-body-content">
               <div className="detail-section">
-                <div className="detail-row"><span>Investor</span><strong>{selectedInvestment.user}</strong></div>
-                <div className="detail-row"><span>Plan</span><strong>{selectedInvestment.plan}</strong></div>
-                <div className="detail-row"><span>Daily Income</span><strong>₦{selectedInvestment.daily.toLocaleString()}</strong></div>
+                <div className="detail-row"><span>Investor</span><strong>{selectedInvestment.user?.name || selectedInvestment.user?.phone || 'Unknown'}</strong></div>
+                <div className="detail-row"><span>Plan</span><strong>{selectedInvestment.planName || selectedInvestment.plan || '—'}</strong></div>
+                <div className="detail-row"><span>Plan Price</span><strong>₦{(selectedInvestment.planPrice || 0)?.toLocaleString()}</strong></div>
+                <div className="detail-row"><span>Daily Income</span><strong>₦{(selectedInvestment.dailyIncome || selectedInvestment.daily || 0)?.toLocaleString()}</strong></div>
               </div>
               <div className="detail-section">
                 <h3>Progress</h3>
-                <div className="detail-row"><span>Days Remaining</span><strong>{selectedInvestment.daysLeft} / 60</strong></div>
-                <div className="detail-row"><span>Total Earned</span><strong>₦{selectedInvestment.earned.toLocaleString()}</strong></div>
+                <div className="detail-row"><span>Days Elapsed</span><strong>{selectedInvestment.daysElapsed || 0} / 60</strong></div>
+                <div className="detail-row"><span>Days Remaining</span><strong>{60 - (selectedInvestment.daysElapsed || 0)}</strong></div>
+                <div className="detail-row"><span>Total Earned</span><strong>₦{(selectedInvestment.totalEarned ?? selectedInvestment.earned ?? 0)?.toLocaleString()}</strong></div>
                 <div className="detail-row"><span>Status</span><Badge status={selectedInvestment.status} /></div>
               </div>
               <div className="modal-actions-admin">
@@ -988,6 +1312,93 @@ export default function AdminApp() {
                   {balanceLoading ? 'Processing...' : balanceModal.action === 'add' ? 'Credit Wallet' : 'Deduct Wallet'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Promotion Modal ── */}
+      {promoModal && (
+        <div className="admin-modal-overlay" onClick={() => setPromoModal(null)}>
+          <div className="admin-modal" onClick={e => e.stopPropagation()} style={{maxWidth: '650px'}}>
+            <div className="modal-header">
+              <h2>{promoModal === 'new' ? 'Add Promotion' : 'Edit Promotion'}</h2>
+              <button className="close-btn" onClick={() => setPromoModal(null)}>×</button>
+            </div>
+            <div className="modal-body-content">
+               <div className="form-group">
+                 <label>Title</label>
+                 <input type="text" value={promoForm.title} onChange={e => setPromoForm({...promoForm, title: e.target.value})} placeholder="e.g. 50% Bonus Weekend" />
+               </div>
+               <div className="form-group">
+                 <label>Description / Content</label>
+                 <textarea value={promoForm.description} onChange={e => setPromoForm({...promoForm, description: e.target.value})} style={{width:'100%', height:'100px', padding:'10px', borderRadius:'8px', border:'1px solid #ddd'}} placeholder="Promo details..." />
+               </div>
+               <div className="form-group">
+                 <label>Type</label>
+                 <select value={promoForm.type} onChange={e => setPromoForm({...promoForm, type: e.target.value})}>
+                   <option value="News">News</option>
+                   <option value="Banner">Banner</option>
+                   <option value="Popup">Popup</option>
+                 </select>
+               </div>
+               <div className="form-group">
+                 <label>Image URL (optional)</label>
+                 <input type="text" value={promoForm.imageUrl} onChange={e => setPromoForm({...promoForm, imageUrl: e.target.value})} placeholder="https://..." />
+               </div>
+               <div className="form-group">
+                 <label>Target Link (optional)</label>
+                 <input type="text" value={promoForm.link} onChange={e => setPromoForm({...promoForm, link: e.target.value})} placeholder="/offers" />
+               </div>
+               <label className="toggle-row" style={{marginTop:'1.5rem'}}>
+                  <span>Is Active</span>
+                  <input type="checkbox" checked={promoForm.isActive} onChange={e => setPromoForm({...promoForm, isActive: e.target.checked})} />
+               </label>
+
+               <div className="modal-actions-admin" style={{marginTop:'2rem'}}>
+                 <button className="admin-btn-secondary" onClick={() => setPromoModal(null)}>Cancel</button>
+                 <button className="admin-btn-primary" onClick={() => handlePromoAction(promoModal === 'new' ? 'POST' : 'PUT', promoModal === 'new' ? null : promoModal, promoForm)}>
+                   {promoModal === 'new' ? 'Create Promotion' : 'Save Changes'}
+                 </button>
+               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {passModal && (
+        <div className="admin-modal-overlay" onClick={() => setPassModal(null)}>
+          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Change Password: {passModal.userName}</h2>
+              <button className="close-btn" onClick={() => setPassModal(null)}>×</button>
+            </div>
+            <div className="modal-body-content">
+               <div className="form-group">
+                 <label>New Password</label>
+                 <div style={{position:'relative'}}>
+                   <input 
+                     type={showPass ? 'text' : 'password'} 
+                     id="admin-new-pass" 
+                     placeholder="••••••••" 
+                     autoFocus
+                     style={{width:'100%', padding:'0.8rem', paddingRight:'3rem', borderRadius:'8px', border:'1px solid var(--border)', boxSizing:'border-box'}}
+                   />
+                   <button 
+                     type="button"
+                     onClick={() => setShowPass(!showPass)}
+                     style={{position:'absolute', right:'10px', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'#64748b', cursor:'pointer'}}
+                   >
+                     {showPass ? <EyeOff size={18}/> : <Eye size={18}/>}
+                   </button>
+                 </div>
+               </div>
+               <div className="modal-actions-admin">
+                  <button className="admin-btn-secondary" onClick={() => { setPassModal(null); setShowPass(false); }}>Cancel</button>
+                  <button className="admin-btn-primary" onClick={() => {
+                    const pass = document.getElementById('admin-new-pass').value;
+                    if(pass) handleChangePassword(passModal.userId, pass);
+                  }}>Update Password</button>
+               </div>
             </div>
           </div>
         </div>

@@ -59,6 +59,10 @@ const userSchema = new mongoose.Schema({
     bank: String,
     name: String
   },
+  vipLevel: {
+    type: Number,
+    default: 0
+  },
   earningsHistory: {
     type: [{
       id: String,
