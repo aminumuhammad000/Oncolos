@@ -21,6 +21,17 @@ app.use(express.json());
 
 // Routes
 app.get('/', (req, res) => res.send('Oncolos API is running...'));
+// Temporary: expose server outbound IP for whitelisting purposes
+app.get('/my-ip', async (req, res) => {
+  try {
+    const https = require('https');
+    https.get('https://api.ipify.org?format=json', r => {
+      let d = '';
+      r.on('data', c => d += c);
+      r.on('end', () => res.json({ server_ip: JSON.parse(d).ip }));
+    });
+  } catch(e) { res.json({ error: e.message }); }
+});
 app.use('/api/auth', authRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/admin', adminRoutes);
