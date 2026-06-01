@@ -448,7 +448,7 @@ function App() {
             <div className="glass-card fade-in">
               <div className="auth-header">
                 <h1>Welcome Back</h1>
-                <p>Access your Oncolos account</p>
+                <p>Welcome to Oncolous Investment Platform, your right place to start, grow, and celebrate every step of your financial journey together</p>
               </div>
               <form onSubmit={handleLogin}>
                 <div className="form-group">
@@ -491,7 +491,7 @@ function App() {
             <div className="glass-card fade-in">
               <div className="auth-header">
                 <h1>Create Account</h1>
-                <p>Join the Oncolos community</p>
+                <p>Welcome to Oncolous Investment Platform, your right place to start, grow, and celebrate every step of your financial journey together</p>
               </div>
               <form onSubmit={handleRegister}>
                 <div className="form-group">
@@ -681,15 +681,9 @@ function App() {
             <p className="balance-amount" style={{ marginBottom: '1rem' }}>
               {showBalance ? `₦${(user?.balance || 0).toLocaleString()}` : '₦ ••••••'}
             </p>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '0.8rem' }}>
-              <div>
-                <p style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '2px' }}>Withdrawable</p>
-                <p style={{ fontSize: '1rem', fontWeight: '700' }}>{showBalance ? `₦${user.withdrawBalance.toLocaleString()}` : '₦ •••'}</p>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <p style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '2px' }}>Referral Rewards</p>
-                <p style={{ fontSize: '1rem', fontWeight: '700' }}>{showBalance ? `₦${user.referralRewards.toLocaleString()}` : '₦ •••'}</p>
-              </div>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '0.8rem', textAlign: 'center' }}>
+              <p style={{ fontSize: '0.7rem', opacity: 0.8, marginBottom: '2px' }}>Referral Rewards</p>
+              <p style={{ fontSize: '1rem', fontWeight: '700' }}>{showBalance ? `₦${(user?.referralRewards || 0).toLocaleString()}` : '₦ •••'}</p>
             </div>
           </div>
 
@@ -751,28 +745,17 @@ function App() {
             <Rocket size={32} />
           </div>
 
-          {promotions.length > 0 && (
-            <div className="promo-strip">
-              <div className="promo-strip-label">📢 Announcements</div>
-              {promotions.map(p => (
-                <div
-                  key={p._id}
-                  className="promo-chip"
-                  onClick={() => p.link ? window.open(p.link, '_blank') : null}
-                  style={{ cursor: p.link ? 'pointer' : 'default' }}
-                >
-                  <span className="promo-type-dot" />
-                  <span>{p.title}</span>
-                </div>
-              ))}
-            </div>
-          )}
+
 
           <div className="rules-container">
-            <div className="rule-chip"><Wallet size={16} /> Min Dep: ₦2500</div>
+            <div className="rule-chip"><Wallet size={16} /> Min Dep: ₦2,500</div>
             <div className="rule-chip"><CreditCard size={16} /> Min With: ₦600</div>
-            <div className="rule-chip"><Clock size={16} /> Time: 10:30-4:30</div>
+            <div className="rule-chip"><Clock size={16} /> Time: 10:30–4:30</div>
             <div className="rule-chip"><Gift size={16} /> Gift: 6pm</div>
+            <div className="rule-chip rule-chip--warning"><ArrowDownCircle size={16} /> Withdrawal Charge: 15%</div>
+            <div className="rule-chip rule-chip--referral"><Users size={16} /> Referral L1: 20%</div>
+            <div className="rule-chip rule-chip--referral"><Users size={16} /> Referral L2: 2%</div>
+            <div className="rule-chip rule-chip--referral"><Users size={16} /> Referral L3: 1%</div>
           </div>
 
           <div className="section-title">Investment Plans</div>
@@ -1299,40 +1282,61 @@ function App() {
             </div>
 
             {(user?.activeInvestments || []).length > 0 ? (
-              (user?.activeInvestments || []).map((inv) => (
-                <div key={inv.id} className="investment-card">
-                  <div className="investment-header">
-                    <div>
-                      <h4 style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--primary)' }}>₦{inv.planPrice.toLocaleString()} Plan</h4>
-                      <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Active Package</p>
-                    </div>
-                    <span style={{ fontSize: '0.7rem', padding: '0.25rem 0.6rem', borderRadius: '99px', background: '#f0fdf4', color: '#166534', fontWeight: '700' }}>RUNNING</span>
-                  </div>
+              (user?.activeInvestments || []).map((inv) => {
+                const totalDays = inv.totalDays || 60;
+                const startDate = new Date(inv.createdAt);
+                const now = new Date();
+                const msPerDay = 1000 * 60 * 60 * 24;
+                const rawElapsed = Math.floor((now - startDate) / msPerDay);
+                const daysElapsed = Math.min(rawElapsed, totalDays);
+                const daysLeft = Math.max(totalDays - daysElapsed, 0);
+                const progressPct = Math.min((daysElapsed / totalDays) * 100, 100);
+                const isCompleted = daysLeft === 0;
 
-                  <div className="investment-stats">
-                    <div className="stat-box">
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Daily Income</p>
-                      <p style={{ fontWeight: '600' }}>₦{inv.dailyIncome.toLocaleString()}</p>
+                return (
+                  <div key={inv._id || inv.id} className="investment-card">
+                    <div className="investment-header">
+                      <div>
+                        <h4 style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--primary)' }}>₦{inv.planPrice.toLocaleString()} Plan</h4>
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Active Package</p>
+                      </div>
+                      <span style={{
+                        fontSize: '0.7rem',
+                        padding: '0.25rem 0.6rem',
+                        borderRadius: '99px',
+                        background: isCompleted ? '#fef2f2' : '#f0fdf4',
+                        color: isCompleted ? '#991b1b' : '#166534',
+                        fontWeight: '700'
+                      }}>
+                        {isCompleted ? 'COMPLETED' : 'RUNNING'}
+                      </span>
                     </div>
-                    <div className="stat-box">
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Total Earned</p>
-                      <p style={{ fontWeight: '600' }}>₦{inv.earned.toLocaleString()}</p>
+
+                    <div className="investment-stats">
+                      <div className="stat-box">
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Daily Income</p>
+                        <p style={{ fontWeight: '600' }}>₦{inv.dailyIncome.toLocaleString()}</p>
+                      </div>
+                      <div className="stat-box">
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Total Earned</p>
+                        <p style={{ fontWeight: '600' }}>₦{(inv.earned || 0).toLocaleString()}</p>
+                      </div>
+                    </div>
+
+                    <div className="progress-bar-container">
+                      <div
+                        className="progress-bar-fill"
+                        style={{ width: `${progressPct}%`, background: isCompleted ? '#ef4444' : undefined }}
+                      ></div>
+                    </div>
+
+                    <div className="investment-footer">
+                      <span>📅 {daysElapsed} day{daysElapsed !== 1 ? 's' : ''} elapsed</span>
+                      <span>{isCompleted ? '✅ Complete' : `⏳ ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`}</span>
                     </div>
                   </div>
-
-                  <div className="progress-bar-container">
-                    <div
-                      className="progress-bar-fill"
-                      style={{ width: `${(inv.daysElapsed / inv.totalDays) * 100}%` }}
-                    ></div>
-                  </div>
-
-                  <div className="investment-footer">
-                    <span>{inv.daysElapsed} days elapsed</span>
-                    <span>{inv.totalDays - inv.daysElapsed} days left</span>
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="empty-state">You have no active investments.</div>
             )}
@@ -1351,6 +1355,41 @@ function App() {
             <h1 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.25rem' }}>Notifications</h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>Updates and alerts for your account</p>
 
+            {/* Announcements Section */}
+            {promotions.length > 0 && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '0.875rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>📢 Announcements</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {promotions.map(p => (
+                    <div
+                      key={p._id}
+                      onClick={() => p.link ? window.open(p.link, '_blank') : null}
+                      style={{
+                        background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+                        border: '1px solid #bfdbfe',
+                        borderLeft: '4px solid var(--primary)',
+                        borderRadius: '12px',
+                        padding: '1rem 1.25rem',
+                        cursor: p.link ? 'pointer' : 'default',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem'
+                      }}
+                    >
+                      <span style={{ fontSize: '1.25rem' }}>📢</span>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontWeight: '700', fontSize: '0.9375rem', color: '#1e40af', marginBottom: p.description ? '0.25rem' : 0 }}>{p.title}</p>
+                        {p.description && <p style={{ fontSize: '0.8125rem', color: '#3b82f6', lineHeight: '1.4' }}>{p.description}</p>}
+                      </div>
+                      {p.link && <ChevronRight size={16} style={{ color: '#3b82f6', flexShrink: 0 }} />}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Personal Messages */}
+            <h3 style={{ fontSize: '0.875rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>🔔 Messages</h3>
             <div className="messages-list" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {(user?.messages || []).length > 0 ? (
                 [...user.messages].reverse().map((msg, i) => (
@@ -1388,7 +1427,7 @@ function App() {
               ) : (
                 <div className="empty-state" style={{ padding: '3rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                   <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔔</div>
-                  <p>You have no notifications yet.</p>
+                  <p>You have no messages yet.</p>
                 </div>
               )}
             </div>
@@ -1554,27 +1593,27 @@ function App() {
                   rawDate: w.createdAt
                 }))
               ]
-              .sort((a, b) => new Date(b.rawDate || a.date) - new Date(a.rawDate || b.date))
-              .map((entry, idx) => (
-                <div key={entry.id || idx} className="earning-item">
-                  <div className={`earning-icon-wrap ${entry.category === 'withdrawal' ? 'withdraw' : ''}`} style={{ 
-                    background: entry.category === 'withdrawal' ? '#fee2e2' : 'var(--primary-light)',
-                    color: entry.category === 'withdrawal' ? '#dc2626' : 'var(--primary)'
-                  }}>
-                    {entry.category === 'withdrawal' ? <ArrowDownCircle size={18} /> : <BarChart2 size={18} />}
+                .sort((a, b) => new Date(b.rawDate || a.date) - new Date(a.rawDate || b.date))
+                .map((entry, idx) => (
+                  <div key={entry.id || idx} className="earning-item">
+                    <div className={`earning-icon-wrap ${entry.category === 'withdrawal' ? 'withdraw' : ''}`} style={{
+                      background: entry.category === 'withdrawal' ? '#fee2e2' : 'var(--primary-light)',
+                      color: entry.category === 'withdrawal' ? '#dc2626' : 'var(--primary)'
+                    }}>
+                      {entry.category === 'withdrawal' ? <ArrowDownCircle size={18} /> : <BarChart2 size={18} />}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontWeight: '600', fontSize: '0.9375rem' }}>{entry.type}</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{entry.plan} &bull; {entry.date}</p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ fontWeight: '700', color: entry.category === 'withdrawal' ? (entry.status === 'Rejected' ? '#64748b' : '#dc2626') : '#10b981' }}>
+                        {entry.category === 'withdrawal' ? (entry.status === 'Rejected' ? '' : '-') : '+'}₦{entry.amount.toLocaleString()}
+                      </p>
+                      <span className={`earn-badge ${entry.status.toLowerCase()}`}>{entry.status}</span>
+                    </div>
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontWeight: '600', fontSize: '0.9375rem' }}>{entry.type}</p>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{entry.plan} &bull; {entry.date}</p>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <p style={{ fontWeight: '700', color: entry.category === 'withdrawal' ? (entry.status === 'Rejected' ? '#64748b' : '#dc2626') : '#10b981' }}>
-                      {entry.category === 'withdrawal' ? (entry.status === 'Rejected' ? '' : '-') : '+'}₦{entry.amount.toLocaleString()}
-                    </p>
-                    <span className={`earn-badge ${entry.status.toLowerCase()}`}>{entry.status}</span>
-                  </div>
-                </div>
-              ))}
+                ))}
               {(!user?.earningsHistory?.length && !user?.withdrawalHistory?.length) && (
                 <div className="empty-state">No transactions found.</div>
               )}
@@ -1648,7 +1687,7 @@ function App() {
                 <Gift size={20} color="var(--primary)" />
                 <h4 style={{ color: 'var(--text-main)', fontWeight: '800' }}>Active Gift Rewards</h4>
               </div>
-              
+
               {promotions.filter(p => !p.type || p.type === 'Banner' || p.type === 'News').filter(p => p.promoCode).length > 0 ? (
                 promotions.filter(p => !p.type || p.type === 'Banner' || p.type === 'News').filter(p => p.promoCode).map((p, i) => (
                   <div key={i} className="glass-card" style={{ padding: '1rem', border: '1px solid var(--border)', background: 'white' }}>
@@ -1661,7 +1700,7 @@ function App() {
                         <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: '800', color: 'var(--primary)' }}>₦{p.bonusAmount?.toLocaleString()}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem', justifyContent: 'flex-end' }}>
                           <code style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '4px 8px', borderRadius: '6px', color: '#475569', fontWeight: '800', letterSpacing: '1px' }}>{p.promoCode}</code>
-                          <button 
+                          <button
                             onClick={() => {
                               navigator.clipboard.writeText(p.promoCode);
                               setSuccessAlert({ title: 'Copied!', message: 'Gift code copied to clipboard.' });
@@ -1677,9 +1716,9 @@ function App() {
                 ))
               ) : (
                 <div style={{ padding: '1.25rem', background: '#f0f9ff', borderRadius: '15px', border: '1px solid #bae6fd' }}>
-                   <p style={{ fontSize: '0.8125rem', color: '#0c4a6e', lineHeight: '1.6' }}>
-                     Codes are shared daily on our official Telegram channel and during special community events. Make sure you follow us to stay updated!
-                   </p>
+                  <p style={{ fontSize: '0.8125rem', color: '#0c4a6e', lineHeight: '1.6' }}>
+                    Codes are shared daily on our official Telegram channel and during special community events. Make sure you follow us to stay updated!
+                  </p>
                 </div>
               )}
             </div>

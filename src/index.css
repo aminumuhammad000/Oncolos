@@ -451,6 +451,18 @@ body {
     font-weight: 500;
 }
 
+.rule-chip--warning {
+    background: #fff7ed;
+    border-color: #fed7aa;
+    color: #c2410c;
+}
+
+.rule-chip--referral {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    color: #4338ca;
+}
+
 /* Buttons */
 .btn {
   width: 100%;
