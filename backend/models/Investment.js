@@ -30,6 +30,10 @@ const investmentSchema = new mongoose.Schema({
     type: String,
     enum: ['Running', 'Completed'],
     default: 'Running'
+  },
+  lastPayoutAt: {
+    type: Date,
+    default: Date.now
   }
 }, { timestamps: true });
 

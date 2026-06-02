@@ -216,7 +216,6 @@ function App() {
   };
 
   const plans = [
-    { price: 500, daily: 83 },
     { price: 2500, daily: 500 },
     { price: 6000, daily: 1000 },
     { price: 12000, daily: 2000 },
@@ -737,13 +736,7 @@ function App() {
             </button>
           </div>
 
-          <div className="refer-banner" onClick={() => setView('referral')}>
-            <div>
-              <h3>Refer & Earn</h3>
-              <p>Invite friends and get 10% commission</p>
-            </div>
-            <Rocket size={32} />
-          </div>
+
 
 
 
@@ -1284,11 +1277,7 @@ function App() {
             {(user?.activeInvestments || []).length > 0 ? (
               (user?.activeInvestments || []).map((inv) => {
                 const totalDays = inv.totalDays || 60;
-                const startDate = new Date(inv.createdAt);
-                const now = new Date();
-                const msPerDay = 1000 * 60 * 60 * 24;
-                const rawElapsed = Math.floor((now - startDate) / msPerDay);
-                const daysElapsed = Math.min(rawElapsed, totalDays);
+                const daysElapsed = inv.daysElapsed || 0;
                 const daysLeft = Math.max(totalDays - daysElapsed, 0);
                 const progressPct = Math.min((daysElapsed / totalDays) * 100, 100);
                 const isCompleted = daysLeft === 0;
