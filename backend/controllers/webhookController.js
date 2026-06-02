@@ -88,7 +88,10 @@ exports.handleDeposit = async (req, res) => {
     // ── STEP 1: Atomic wallet credit ──
     await User.updateOne(
       { _id: user._id },
-      { $inc: { balance: amountNaira, withdrawBalance: amountNaira } }
+      { 
+        $inc: { balance: amountNaira, withdrawBalance: amountNaira },
+        $set: { hasDeposited: true }
+      }
     );
     console.log(`[Webhook] ✅ Wallet credited: ₦${amountNaira} → user ${user.phone}`);
 

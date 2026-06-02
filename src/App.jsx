@@ -344,15 +344,39 @@ function App() {
             const data = await res.json();
             if (res.ok) {
               setRealBanks(data.data);
+              // Pre-fill saved bank details if available
+              if (user?.savedBankDetails?.bankCode) {
+                const saved = user.savedBankDetails;
+                setWithdrawForm(prev => ({
+                  ...prev,
+                  bank: saved.bankCode,
+                  accountNumber: saved.accountNumber,
+                  resolvedName: saved.accountName
+                }));
+                // Also set the search term for the input display
+                const bankObj = data.data.find(b => b.code === saved.bankCode);
+                if (bankObj) setBankSearchTerm(bankObj.name);
+              }
             }
           } catch (err) {
             console.error('Failed to fetch banks');
           }
         };
         fetchBanks();
+      } else if (user?.savedBankDetails?.bankCode && !withdrawForm.bank) {
+        // Pre-fill if banks already loaded but form is empty
+        const saved = user.savedBankDetails;
+        setWithdrawForm(prev => ({
+          ...prev,
+          bank: saved.bankCode,
+          accountNumber: saved.accountNumber,
+          resolvedName: saved.accountName
+        }));
+        const bankObj = realBanks.find(b => b.code === saved.bankCode);
+        if (bankObj) setBankSearchTerm(bankObj.name);
       }
     }
-  }, [view]);
+  }, [view, user]);
 
 
   const handleSignIn = async () => {
@@ -735,7 +759,6 @@ function App() {
               <span>Redeem</span>
             </button>
           </div>
-
 
 
 
@@ -1441,6 +1464,18 @@ function App() {
                 Our administrator has temporarily disabled withdrawals. Your funds are safe. Please check back soon.
               </p>
               <button className="btn btn-primary" style={{ background: '#dc2626', borderColor: '#dc2626' }} onClick={() => setView('dashboard')}>Return to Dashboard</button>
+            </div>
+          ) : (!user?.hasDeposited || !user?.hasInvested) ? (
+            <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>⚠️</div>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '0.75rem', color: 'var(--primary)' }}>Activation Required</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem', lineHeight: '1.6', maxWidth: '320px', margin: '0 auto 2rem' }}>
+                To withdraw your welcome bonus and earnings, you must first <strong>make a deposit</strong> and <strong>purchase an investment plan</strong>.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <button className="btn btn-primary" onClick={() => setView('recharge')}>Make a Deposit</button>
+                <button className="btn btn-secondary" onClick={() => setView('dashboard')}>Go to Plans</button>
+              </div>
             </div>
           ) : (
             <div style={{ padding: '0 0.5rem' }}>

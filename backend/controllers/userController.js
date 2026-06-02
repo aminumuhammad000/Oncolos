@@ -185,10 +185,19 @@ exports.requestWithdrawal = async (req, res) => {
         if (amount < 600) {
             return res.status(400).json({ message: 'Minimum withdrawal is ₦600' });
         }
+        
+        // 3. New restriction: must have deposited and invested
+        if (!user.hasDeposited || !user.hasInvested) {
+            return res.status(403).json({ message: 'You must make a deposit and an investment before you can withdraw your welcome bonus and earnings.' });
+        }
 
         // 2. Deduct balance and create withdrawal record
         user.balance -= amount;
         user.withdrawBalance -= amount;
+        
+        // Save bank details for next time
+        user.savedBankDetails = { bank, bankCode, accountNumber, accountName };
+        
         await user.save();
 
         const withdrawal = await require('../models/Withdrawal').create({

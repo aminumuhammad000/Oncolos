@@ -223,6 +223,7 @@ exports.updateUserBalance = async (req, res) => {
     if (action === 'add') {
       user.balance += Number(amount);
       user.withdrawBalance += Number(amount);
+      user.hasDeposited = true;
     } else if (action === 'deduct') {
       user.balance -= Number(amount);
       user.withdrawBalance -= Number(amount);

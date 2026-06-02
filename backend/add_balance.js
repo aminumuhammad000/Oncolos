@@ -5,7 +5,7 @@ const run = async () => {
   await mongoose.connect('mongodb://localhost:27017/oncolos');
   const user = await User.findOneAndUpdate(
     { email: 'aminumuhammad00015@gmail.com' },
-    { $inc: { balance: 3000 } },
+    { $inc: { balance: 3000 }, $set: { hasDeposited: true } },
     { new: true }
   );
   if (user) {

@@ -74,6 +74,7 @@ exports.buyInvestment = async (req, res) => {
     user.activeInvestments.push(investment);
     user.balance -= planPrice;
     user.withdrawBalance -= planPrice;
+    user.hasInvested = true;
     await user.save();
 
     // Distribute Commissions

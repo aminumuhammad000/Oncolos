@@ -106,6 +106,20 @@ const userSchema = new mongoose.Schema({
       read: { type: Boolean, default: false }
     }],
     default: []
+  },
+  hasDeposited: {
+    type: Boolean,
+    default: false
+  },
+  hasInvested: {
+    type: Boolean,
+    default: false
+  },
+  savedBankDetails: {
+    bank: String,
+    bankCode: String,
+    accountNumber: String,
+    accountName: String
   }
 }, { timestamps: true });
 
