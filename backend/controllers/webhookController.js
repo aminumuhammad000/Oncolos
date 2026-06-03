@@ -31,8 +31,9 @@ exports.handleDeposit = async (req, res) => {
 
   const { event, data } = raw;
 
-  // ── VTStack sends amount in KOBO ──
-  const amountNaira = data?.amount ? (Number(data.amount) / 100) : 0;
+  // VTStack sends net amount in KOBO after 1% fee (according to user)
+  // We divide by 0.99 to get the original gross amount and round to avoid decimals
+  const amountNaira = data?.amount ? Math.round(Number(data.amount) / 100 / 0.99) : 0;
 
   // VTStack may use 'virtualAccount' or 'accountNumber'
 
