@@ -188,7 +188,7 @@ exports.requestWithdrawal = async (req, res) => {
         }
         
         // 3. New restriction: must have deposited and invested
-        if (!user.hasDeposited || !user.hasInvested) {
+        if (!user.hasDeposited && !user.hasInvested) {
             return res.status(403).json({ message: 'You must make a deposit and an investment before you can withdraw your welcome bonus and earnings.' });
         }
 
@@ -216,7 +216,10 @@ exports.requestWithdrawal = async (req, res) => {
         res.status(201).json({
             success: true,
             message: 'Withdrawal request submitted successfully',
-            withdrawal,
+            data: {
+                withdrawal,
+                user
+            },
             newBalance: user.balance
         });
     } catch (err) {

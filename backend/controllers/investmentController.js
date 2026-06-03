@@ -95,7 +95,10 @@ exports.buyInvestment = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      data: investment,
+      data: {
+        investment,
+        user
+      },
       newBalance: user.balance
     });
   } catch (err) {

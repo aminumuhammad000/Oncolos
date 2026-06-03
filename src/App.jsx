@@ -203,7 +203,7 @@ function App() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      setUser(prev => ({ ...prev, balance: data.newBalance }));
+      setUser(data.data.user);
       setSuccessAlert({
         title: 'Transaction Submitted!',
         message: `Your withdrawal of ₦${amount.toLocaleString()} is being processed. It will arrive shortly.`
@@ -448,7 +448,7 @@ function App() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      setUser(prev => ({ ...prev, balance: data.newBalance, activeInvestments: [data.data, ...(prev?.activeInvestments || [])] }));
+      setUser(data.data.user);
       setShowModal(false);
       setPendingPlan(null);
       setSuccessAlert({ title: '🎉 Investment Successful!', message: `Your ₦${pendingPlan.price.toLocaleString()} investment is now active. You will earn ₦${pendingPlan.daily.toLocaleString()} daily for 60 days.` });
@@ -1465,7 +1465,7 @@ function App() {
               </p>
               <button className="btn btn-primary" style={{ background: '#dc2626', borderColor: '#dc2626' }} onClick={() => setView('dashboard')}>Return to Dashboard</button>
             </div>
-          ) : (!user?.hasDeposited || !user?.hasInvested) ? (
+          ) : (!user?.hasDeposited && !user?.hasInvested) ? (
             <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
               <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>⚠️</div>
               <h2 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '0.75rem', color: 'var(--primary)' }}>Activation Required</h2>
