@@ -32,6 +32,7 @@ const distributeCommissions = async (user, amount) => {
             amount: commission,
             plan: `Level ${config.level} (${currentUserPhone})`,
             date: new Date().toLocaleDateString(),
+            rawDate: new Date(),
             status: 'Completed'
         });
 

@@ -33,6 +33,7 @@ exports.claimDailyBonus = async (req, res) => {
       amount: bonus,
       plan: 'System Bonus',
       date: new Date().toLocaleDateString(),
+      rawDate: new Date(),
       status: 'Completed'
     });
 
@@ -254,6 +255,7 @@ exports.redeemCode = async (req, res) => {
             amount: bonus,
             plan: `Gift Code: ${code.toUpperCase()}`,
             date: new Date().toLocaleDateString(),
+            rawDate: new Date(),
             status: 'Completed'
         });
 

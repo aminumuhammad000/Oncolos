@@ -60,6 +60,7 @@ const startInvestmentCron = () => {
               amount: inv.dailyIncome,
               plan: `₦${(inv.planPrice || 0).toLocaleString()} Plan ROI`,
               date: inv.lastPayoutAt.toLocaleDateString(),
+              rawDate: inv.lastPayoutAt,
               status: 'Completed'
             }
           }

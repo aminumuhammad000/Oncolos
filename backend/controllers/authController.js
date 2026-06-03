@@ -63,6 +63,7 @@ exports.register = async (req, res) => {
         amount: startBalance,
         plan: 'Platform Signup',
         date: new Date().toLocaleDateString(),
+        rawDate: new Date(),
         status: 'Completed'
       }] : []
     });

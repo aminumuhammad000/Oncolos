@@ -1617,7 +1617,11 @@ function App() {
                   rawDate: w.createdAt
                 }))
               ]
-                .sort((a, b) => new Date(b.rawDate || a.date) - new Date(a.rawDate || b.date))
+                .sort((a, b) => {
+                  const dateA = a.rawDate ? new Date(a.rawDate) : new Date(a.date);
+                  const dateB = b.rawDate ? new Date(b.rawDate) : new Date(b.date);
+                  return (dateB.getTime() || 0) - (dateA.getTime() || 0);
+                })
                 .map((entry, idx) => (
                   <div key={entry.id || idx} className="earning-item">
                     <div className={`earning-icon-wrap ${entry.category === 'withdrawal' ? 'withdraw' : ''}`} style={{

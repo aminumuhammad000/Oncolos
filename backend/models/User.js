@@ -70,6 +70,7 @@ const userSchema = new mongoose.Schema({
       amount: Number,
       plan: String,
       date: String,
+      rawDate: { type: Date, default: Date.now },
       status: String
     }
   ],
