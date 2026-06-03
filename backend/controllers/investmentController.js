@@ -76,6 +76,18 @@ exports.buyInvestment = async (req, res) => {
     user.balance -= planPrice;
     user.withdrawBalance -= planPrice;
     user.hasInvested = true;
+    
+    // Record plan purchase in history
+    user.earningsHistory.push({
+      id: Date.now().toString(),
+      type: 'Plan Purchase',
+      amount: planPrice,
+      plan: `₦${planPrice.toLocaleString()} Investment`,
+      date: new Date().toLocaleDateString(),
+      rawDate: new Date(),
+      status: 'Completed'
+    });
+
     await user.save();
 
     // Distribute Commissions

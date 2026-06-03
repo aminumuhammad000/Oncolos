@@ -113,6 +113,7 @@ exports.handleDeposit = async (req, res) => {
         plan: 'Bank Transfer',
         amount: amountNaira,
         date: new Date().toLocaleDateString(),
+        rawDate: new Date(),
         status: 'Completed'
       };
 

@@ -221,12 +221,34 @@ exports.updateUserBalance = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     if (action === 'add') {
-      user.balance += Number(amount);
-      user.withdrawBalance += Number(amount);
+      const numAmount = Number(amount);
+      user.balance += numAmount;
+      user.withdrawBalance += numAmount;
       user.hasDeposited = true;
+      
+      user.earningsHistory.push({
+        id: Date.now().toString(),
+        type: 'Admin Deposit',
+        amount: numAmount,
+        plan: 'Wallet Funding',
+        date: new Date().toLocaleDateString(),
+        rawDate: new Date(),
+        status: 'Completed'
+      });
     } else if (action === 'deduct') {
-      user.balance -= Number(amount);
-      user.withdrawBalance -= Number(amount);
+      const numAmount = Number(amount);
+      user.balance -= numAmount;
+      user.withdrawBalance -= numAmount;
+
+      user.earningsHistory.push({
+        id: Date.now().toString(),
+        type: 'Admin Deduction',
+        amount: numAmount,
+        plan: 'Balance Adjustment',
+        date: new Date().toLocaleDateString(),
+        rawDate: new Date(),
+        status: 'Completed'
+      });
     } else return res.status(400).json({ message: 'Invalid action' });
 
     await user.save();

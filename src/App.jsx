@@ -1595,7 +1595,7 @@ function App() {
             <div className="earnings-summary">
               <div className="earning-stat">
                 <p>Total Earned</p>
-                <h3>₦{(user?.earningsHistory || []).reduce((acc, e) => acc + (e.amount || 0), 0).toLocaleString()}</h3>
+                <h3>₦{(user?.earningsHistory || []).filter(e => !['Plan Purchase', 'Admin Deduction'].includes(e.type)).reduce((acc, e) => acc + (e.amount || 0), 0).toLocaleString()}</h3>
               </div>
               <div className="earning-stat">
                 <p>Transactions</p>
@@ -1622,26 +1622,38 @@ function App() {
                   const dateB = b.rawDate ? new Date(b.rawDate) : new Date(b.date);
                   return (dateB.getTime() || 0) - (dateA.getTime() || 0);
                 })
-                .map((entry, idx) => (
-                  <div key={entry.id || idx} className="earning-item">
-                    <div className={`earning-icon-wrap ${entry.category === 'withdrawal' ? 'withdraw' : ''}`} style={{
-                      background: entry.category === 'withdrawal' ? '#fee2e2' : 'var(--primary-light)',
-                      color: entry.category === 'withdrawal' ? '#dc2626' : 'var(--primary)'
-                    }}>
-                      {entry.category === 'withdrawal' ? <ArrowDownCircle size={18} /> : <BarChart2 size={18} />}
+                .map((entry, idx) => {
+                  const isNegative = entry.category === 'withdrawal' || entry.type === 'Plan Purchase' || entry.type === 'Admin Deduction';
+                  const sign = isNegative ? (entry.status === 'Rejected' ? '' : '-') : '+';
+                  const color = isNegative ? (entry.status === 'Rejected' ? '#64748b' : '#dc2626') : '#10b981';
+                  
+                  // Icon mapping
+                  let Icon = BarChart2;
+                  if (entry.category === 'withdrawal') Icon = ArrowDownCircle;
+                  else if (entry.type === 'Plan Purchase') Icon = CreditCard;
+                  else if (entry.type === 'Fund Deposit' || entry.type === 'Admin Deposit') Icon = Wallet;
+                  
+                  return (
+                    <div key={entry.id || idx} className="earning-item">
+                      <div className={`earning-icon-wrap ${isNegative ? 'withdraw' : ''}`} style={{
+                        background: isNegative ? '#fee2e2' : 'var(--primary-light)',
+                        color: isNegative ? '#dc2626' : 'var(--primary)'
+                      }}>
+                        <Icon size={18} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontWeight: '600', fontSize: '0.9375rem' }}>{entry.type}</p>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{entry.plan} &bull; {entry.date}</p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <p style={{ fontWeight: '700', color: color }}>
+                          {sign}₦{entry.amount.toLocaleString()}
+                        </p>
+                        <span className={`earn-badge ${entry.status.toLowerCase()}`}>{entry.status}</span>
+                      </div>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontWeight: '600', fontSize: '0.9375rem' }}>{entry.type}</p>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{entry.plan} &bull; {entry.date}</p>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontWeight: '700', color: entry.category === 'withdrawal' ? (entry.status === 'Rejected' ? '#64748b' : '#dc2626') : '#10b981' }}>
-                        {entry.category === 'withdrawal' ? (entry.status === 'Rejected' ? '' : '-') : '+'}₦{entry.amount.toLocaleString()}
-                      </p>
-                      <span className={`earn-badge ${entry.status.toLowerCase()}`}>{entry.status}</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               {(!user?.earningsHistory?.length && !user?.withdrawalHistory?.length) && (
                 <div className="empty-state">No transactions found.</div>
               )}
