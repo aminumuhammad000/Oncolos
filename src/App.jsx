@@ -43,7 +43,7 @@ function App() {
   const [showModal, setShowModal] = useState(false);
   const [pendingPlan, setPendingPlan] = useState(null);
   const [showBalance, setShowBalance] = useState(true);
-  const [withdrawForm, setWithdrawForm] = useState({ bank: '', accountNumber: '', resolvedName: '', amount: '', isResolving: false });
+  const [withdrawForm, setWithdrawForm] = useState({ bank: '', accountNumber: '', resolvedName: '', amount: '', isResolving: false, isProcessing: false });
   const [bankSearchTerm, setBankSearchTerm] = useState('');
   const [successAlert, setSuccessAlert] = useState(null);
   const [errorAlert, setErrorAlert] = useState(null);
@@ -232,6 +232,7 @@ function App() {
 
     const bankName = realBanks.find(b => b.code === withdrawForm.bank)?.name || 'the selected bank';
 
+    setWithdrawForm(prev => ({ ...prev, isProcessing: true }));
     try {
       const res = await fetch(`${API_URL}/users/request-withdrawal`, {
         method: 'POST',
@@ -252,13 +253,14 @@ function App() {
 
       setUser(data.data.user);
       setSuccessAlert({
-        title: 'Transaction Submitted!',
-        message: `Your withdrawal of ₦${amount.toLocaleString()} is being processed. It will arrive shortly.`
+        title: 'Submission Successful!',
+        message: `Your withdrawal request for ₦${amount.toLocaleString()} has been received and is being processed.`
       });
-      setWithdrawForm({ bank: '', accountNumber: '', resolvedName: '', amount: '', isResolving: false });
+      setWithdrawForm({ bank: '', accountNumber: '', resolvedName: '', amount: '', isResolving: false, isProcessing: false });
       setView('dashboard');
     } catch (err) {
-      setErrorAlert({ title: 'Withdrawal Failed', message: err.message });
+      setErrorAlert({ title: 'Withdrawal Failed', message: err.message || 'Something went wrong. Please try again.' });
+      setWithdrawForm(prev => ({ ...prev, isProcessing: false }));
     }
   };
 
@@ -1759,10 +1761,24 @@ function App() {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  style={{ marginTop: '1.5rem' }}
-                  disabled={!platformSettings.isWithdrawalEnabled || !withdrawForm.resolvedName || withdrawForm.isResolving || !withdrawForm.amount || parseFloat(withdrawForm.amount) < 600}
+                  style={{ 
+                    marginTop: '1.5rem',
+                    height: '54px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.75rem'
+                  }}
+                  disabled={!platformSettings.isWithdrawalEnabled || !withdrawForm.resolvedName || withdrawForm.isResolving || withdrawForm.isProcessing || !withdrawForm.amount || parseFloat(withdrawForm.amount) < 600}
                 >
-                  Confirm Withdrawal
+                  {withdrawForm.isProcessing ? (
+                    <>
+                      <div className="spinner-small" style={{ width: '18px', height: '18px', border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+                      Processing...
+                    </>
+                  ) : (
+                    'Confirm Withdrawal'
+                  )}
                 </button>
               </form>
             </div>
