@@ -43,7 +43,7 @@ function App() {
   const [showModal, setShowModal] = useState(false);
   const [pendingPlan, setPendingPlan] = useState(null);
   const [showBalance, setShowBalance] = useState(true);
-  const [withdrawForm, setWithdrawForm] = useState({ bank: '', accountNumber: '', resolvedName: '', amount: '', isResolving: false, isProcessing: false });
+  const [withdrawForm, setWithdrawForm] = useState({ bank: '', accountNumber: '', resolvedName: '', amount: '', isResolving: false, isProcessing: false, resolutionError: '' });
   const [bankSearchTerm, setBankSearchTerm] = useState('');
   const [successAlert, setSuccessAlert] = useState(null);
   const [errorAlert, setErrorAlert] = useState(null);
@@ -185,7 +185,7 @@ function App() {
 
   const handleNameLookup = async (accountNumber, bankCode) => {
     if (accountNumber.length === 10 && bankCode) {
-      setWithdrawForm(prev => ({ ...prev, isResolving: true, resolvedName: '' }));
+      setWithdrawForm(prev => ({ ...prev, isResolving: true, resolvedName: '', resolutionError: '' }));
       try {
         const res = await fetch(`${API_URL}/users/verify-account`, {
           method: 'POST',
@@ -198,15 +198,15 @@ function App() {
         const data = await res.json();
         if (res.ok) {
           const accName = data.data?.accountName || data.data?.account_name || '';
-          setWithdrawForm(prev => ({ ...prev, isResolving: false, resolvedName: accName }));
+          setWithdrawForm(prev => ({ ...prev, isResolving: false, resolvedName: accName, resolutionError: accName ? '' : 'Name could not be resolved.' }));
         } else {
-          setWithdrawForm(prev => ({ ...prev, isResolving: false, resolvedName: '' }));
+          setWithdrawForm(prev => ({ ...prev, isResolving: false, resolvedName: '', resolutionError: data.message || 'Verification failed.' }));
         }
       } catch (err) {
-        setWithdrawForm(prev => ({ ...prev, isResolving: false, resolvedName: '' }));
+        setWithdrawForm(prev => ({ ...prev, isResolving: false, resolvedName: '', resolutionError: 'Connection error. Please try again.' }));
       }
     } else {
-      setWithdrawForm(prev => ({ ...prev, resolvedName: '' }));
+      setWithdrawForm(prev => ({ ...prev, resolvedName: '', resolutionError: '' }));
     }
   };
 
@@ -1697,6 +1697,20 @@ function App() {
                             Save Account
                           </button>
                         )}
+                      </div>
+                    ) : withdrawForm.resolutionError ? (
+                      <div style={{ padding: '0.75rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <p style={{ fontSize: '0.7rem', color: '#991b1b', textTransform: 'uppercase', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <X size={12} /> Verification Failed
+                        </p>
+                        <p style={{ color: '#b91c1c', fontSize: '0.85rem', fontWeight: '600', margin: 0 }}>{withdrawForm.resolutionError}</p>
+                        <button 
+                          type="button"
+                          onClick={() => handleNameLookup(withdrawForm.accountNumber, withdrawForm.bank)}
+                          style={{ background: 'none', border: 'none', color: '#991b1b', textDecoration: 'underline', fontSize: '0.75rem', padding: 0, cursor: 'pointer', textAlign: 'left', marginTop: '4px' }}
+                        >
+                          Try Again
+                        </button>
                       </div>
                     ) : withdrawForm.accountNumber?.length === 10 && withdrawForm.bank && (
                       <button 
