@@ -1702,7 +1702,32 @@ function App() {
                     value={withdrawForm.amount}
                     onChange={(e) => setWithdrawForm(prev => ({ ...prev, amount: e.target.value }))}
                   />
-                  <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  
+                  {/* Quick Select Amounts */}
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+                    {[1000, 3000, 5000, 10000].map(amt => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => setWithdrawForm(prev => ({ ...prev, amount: amt.toString() }))}
+                        style={{ 
+                          padding: '0.4rem 0.75rem', 
+                          borderRadius: '8px', 
+                          border: `1.5px solid ${withdrawForm.amount === amt.toString() ? 'var(--primary)' : 'var(--border)'}`,
+                          background: withdrawForm.amount === amt.toString() ? 'rgba(37, 99, 235, 0.05)' : 'white',
+                          color: withdrawForm.amount === amt.toString() ? 'var(--primary)' : 'var(--text-main)',
+                          fontSize: '0.8rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        ₦{amt.toLocaleString()}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       Available: ₦{(user?.balance || 0).toLocaleString()}
                     </p>
