@@ -139,7 +139,8 @@ exports.verifyBankAccount = async (req, res) => {
         };
         res.status(200).json({ success: true, data: normalized });
     } catch (err) {
-        console.error('Verify Account Error:', err.response?.data || err.message);
+        const errorMsg = err.response?.status ? `VTStack API Error ${err.response.status}` : err.message;
+        console.warn('Verify Account Warning:', errorMsg);
         
         // Check if it's a 502/504/Timeout (Service Down)
         const isDown = err.response?.status >= 500 || err.code === 'ECONNABORTED' || err.message.includes('timeout');

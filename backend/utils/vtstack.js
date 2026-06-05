@@ -153,8 +153,8 @@ exports.verifyBankAccount = async (bankCode, accountNumber) => {
     console.log('[VTStack] Verify response:', response.data);
     return response.data;
   } catch (err) {
-    const errData = err.response?.data || { message: err.message };
-    console.error('[VTStack] Verify Account Error:', errData);
+    const errorMsg = err.response?.status ? `VTStack API Status ${err.response.status}` : err.message;
+    console.warn('[VTStack] Verify Account Unavailable:', errorMsg);
     throw err;
   }
 };
