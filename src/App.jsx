@@ -1670,28 +1670,42 @@ function App() {
                     value={withdrawForm.accountNumber}
                     onChange={(e) => {
                       const accountNumber = e.target.value.slice(0, 10);
-                      setWithdrawForm(prev => ({ ...prev, accountNumber }));
-                      handleNameLookup(accountNumber, withdrawForm.bank);
+                      setWithdrawForm(prev => ({ ...prev, accountNumber, resolvedName: "" }));
+                      if (accountNumber.length === 10 && withdrawForm.bank) handleNameLookup(accountNumber, withdrawForm.bank);
                     }}
                   />
-                  {withdrawForm.isResolving && <p style={{ fontSize: '0.75rem', color: 'var(--primary)', marginTop: '0.25rem' }}>Verifying account...</p>}
-                  {withdrawForm.resolvedName && (
-                    <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: '#f0fdf4', border: '1px solid #bcf0da', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <p style={{ fontSize: '0.7rem', color: '#166534', textTransform: 'uppercase', fontWeight: '700', marginBottom: '2px' }}>Recipient Name</p>
-                        <p style={{ color: '#065f46', fontSize: '0.9rem', fontWeight: '800' }}>{withdrawForm.resolvedName}</p>
+                  <div style={{ marginTop: "0.75rem" }}>
+                    {withdrawForm.isResolving ? (
+                      <div style={{ padding: "0.75rem", background: "#f8fafc", border: "1px solid var(--border)", borderRadius: "12px", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <div className="spinner-small"></div>
+                        <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", margin: 0 }}>Verifying account name...</p>
                       </div>
-                      {!user?.savedBankAccounts?.some(a => a.accountNumber === withdrawForm.accountNumber) && (
-                        <button 
-                          type="button" 
-                          onClick={handleSaveBank}
-                          style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', padding: '0.4rem 0.75rem', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
-                        >
-                          Save Account
-                        </button>
-                      )}
-                    </div>
-                  )}
+                    ) : withdrawForm.resolvedName ? (
+                      <div style={{ padding: "0.75rem", background: "#f0fdf4", border: "1px solid #bcf0da", borderRadius: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <p style={{ fontSize: "0.7rem", color: "#166534", textTransform: "uppercase", fontWeight: "700", marginBottom: "2px" }}>Account Verified</p>
+                          <p style={{ color: "#065f46", fontSize: "0.9rem", fontWeight: "800" }}>{withdrawForm.resolvedName}</p>
+                        </div>
+                        {!user?.savedBankAccounts?.some(a => a.accountNumber === withdrawForm.accountNumber) && (
+                          <button 
+                            type="button" 
+                            onClick={handleSaveBank}
+                            style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', padding: '0.4rem 0.75rem', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                          >
+                            Save Account
+                          </button>
+                        )}
+                      </div>
+                    ) : withdrawForm.accountNumber?.length === 10 && withdrawForm.bank && (
+                      <button 
+                        type="button"
+                        onClick={() => handleNameLookup(withdrawForm.accountNumber, withdrawForm.bank)}
+                        style={{ width: '100%', padding: '0.75rem', border: '1.5px dashed var(--primary)', borderRadius: '12px', background: 'rgba(37, 99, 235, 0.02)', color: 'var(--primary)', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer' }}
+                      >
+                        Verify Recipient Name
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="form-group" style={{ marginTop: '1rem' }}>
