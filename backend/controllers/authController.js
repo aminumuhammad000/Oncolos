@@ -77,6 +77,18 @@ exports.register = async (req, res) => {
           date: new Date().toLocaleDateString(),
           status: 'Pending' // Will become Active after first investment
         });
+
+        // Add to history for feedback
+        parent.earningsHistory.push({
+          id: Date.now().toString(),
+          type: 'Referral Bonus',
+          amount: 0,
+          plan: `Referral Join: ${newUser.phone}`,
+          date: new Date().toLocaleDateString(),
+          rawDate: new Date(),
+          status: 'Completed'
+        });
+
         await parent.save();
       }
     }
