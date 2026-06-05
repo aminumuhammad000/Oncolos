@@ -230,9 +230,9 @@ function App() {
       return;
     }
     if (!user?.hasInvested) {
-      setErrorAlert({ 
-        title: 'Activation Required', 
-        message: 'You must have at least one active investment before you can request a withdrawal. Please go to the Plans section to get started.' 
+      setErrorAlert({
+        title: 'Activation Required',
+        message: 'You must have at least one active investment before you can request a withdrawal. Please go to the Plans section to get started.'
       });
       return;
     }
@@ -713,16 +713,16 @@ function App() {
                 <button className="btn btn-primary" onClick={() => setShowWelcomeModal(false)} style={{ width: '100%', marginBottom: '0.75rem' }}>
                   Start Investing
                 </button>
-                <a 
-                  href="https://t.me/+WxrTYkKqS9ZjYjg0" 
-                  target="_blank" 
+                <a
+                  href="https://t.me/+WxrTYkKqS9ZjYjg0"
+                  target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-secondary" 
-                  style={{ 
-                    width: '100%', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
+                  className="btn btn-secondary"
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     gap: '0.5rem',
                     background: '#0088cc',
                     color: 'white',
