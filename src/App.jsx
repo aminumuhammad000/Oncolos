@@ -245,7 +245,7 @@ function App() {
           bank: bankName,
           bankCode: withdrawForm.bank,
           accountNumber: withdrawForm.accountNumber,
-          accountName: withdrawForm.resolvedName
+          accountName: withdrawForm.resolvedName === 'SERVICE_UNAVAILABLE' ? withdrawForm.manualName : withdrawForm.resolvedName
         })
       });
       const data = await res.json();
@@ -1682,6 +1682,17 @@ function App() {
                         <div className="spinner-small"></div>
                         <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", margin: 0 }}>Verifying account name...</p>
                       </div>
+                    ) : withdrawForm.resolvedName === 'SERVICE_UNAVAILABLE' ? (
+                      <div style={{ padding: '0.75rem', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px' }}>
+                        <p style={{ fontSize: '0.7rem', color: '#92400e', textTransform: 'uppercase', fontWeight: '700', marginBottom: '4px' }}>Verification Service Busy</p>
+                        <p style={{ fontSize: '0.8rem', color: '#854d0e', marginBottom: '0.75rem' }}>The bank server is slow. Please enter your account name accurately below:</p>
+                        <input 
+                          type="text"
+                          placeholder="Full Name as seen on bank app"
+                          style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #fde68a', fontSize: '0.9rem' }}
+                          onChange={(e) => setWithdrawForm(prev => ({ ...prev, manualName: e.target.value }))}
+                        />
+                      </div>
                     ) : withdrawForm.resolvedName ? (
                       <div style={{ padding: "0.75rem", background: "#f0fdf4", border: "1px solid #bcf0da", borderRadius: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div>
@@ -1783,7 +1794,7 @@ function App() {
                     justifyContent: 'center',
                     gap: '0.75rem'
                   }}
-                  disabled={!platformSettings.isWithdrawalEnabled || !withdrawForm.resolvedName || withdrawForm.isResolving || withdrawForm.isProcessing || !withdrawForm.amount || parseFloat(withdrawForm.amount) < 600}
+                  disabled={!platformSettings.isWithdrawalEnabled || (!withdrawForm.resolvedName && !withdrawForm.manualName) || withdrawForm.isResolving || withdrawForm.isProcessing || !withdrawForm.amount || parseFloat(withdrawForm.amount) < 600}
                 >
                   {withdrawForm.isProcessing ? (
                     <>
