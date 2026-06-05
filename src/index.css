@@ -136,9 +136,11 @@ body {
 
 @media (max-width: 640px) {
   .dash-header {
-    flex-direction: column;
-    gap: 1.5rem;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 0.9rem;
+    margin-bottom: 1.25rem;
   }
 }
 
@@ -146,6 +148,8 @@ body {
   display: flex;
   align-items: center;
   gap: 1rem;
+  min-width: 0;
+  flex: 1;
 }
 
 .avatar-circle {
@@ -159,6 +163,47 @@ body {
   justify-content: center;
   font-weight: 700;
   font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.user-info {
+  min-width: 0;
+}
+
+.user-info h2 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.user-info p {
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+@media (max-width: 480px) {
+  .user-profile {
+    gap: 0.6rem;
+  }
+
+  .avatar-circle {
+    width: 38px;
+    height: 38px;
+    font-size: 1rem;
+  }
+
+  .user-info h2 {
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .user-info p {
+    font-size: 0.7rem !important;
+  }
 }
 
 .balance-grid {
@@ -1032,34 +1077,100 @@ input:focus {
   color: var(--text-muted);
 }
 
-/* ── Earnings Page ── */
-.earnings-summary {
+/* ── Transaction History Page ── */
+
+/* 4-stat summary grid */
+.tx-summary-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
 }
 
-.earning-stat {
+.tx-stat {
   background: #f8fafc;
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 1rem;
+  padding: 0.85rem 1rem;
   text-align: center;
 }
 
-.earning-stat p {
-  font-size: 0.75rem;
+.tx-stat p {
+  font-size: 0.7rem;
   color: var(--text-muted);
-  margin-bottom: 0.25rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.3rem;
 }
 
-.earning-stat h3 {
-  font-size: 1.25rem;
+.tx-stat h3 {
+  font-size: 1.1rem;
   font-weight: 800;
   color: var(--text-main);
 }
 
+.tx-stat--green {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.tx-stat--green h3 {
+  color: #16a34a;
+}
+
+.tx-stat--red {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.tx-stat--red h3 {
+  color: #dc2626;
+}
+
+.tx-stat--amber {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.tx-stat--amber h3 {
+  color: #d97706;
+}
+
+/* Filter tab bar */
+.tx-filter-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.tx-tab {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  text-align: center;
+}
+
+.tx-tab:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: #eff6ff;
+}
+
+.tx-tab.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+/* Shared list + item styles */
 .earnings-list {
   display: flex;
   flex-direction: column;
@@ -1069,18 +1180,21 @@ input:focus {
 .earning-item {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem;
+  gap: 0.85rem;
+  padding: 0.9rem 1rem;
   background: white;
   border: 1px solid var(--border);
   border-radius: 14px;
+  transition: box-shadow 0.15s;
+}
+
+.earning-item:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
 }
 
 .earning-icon-wrap {
   width: 40px;
   height: 40px;
-  background: #f0fdf4;
-  color: #16a34a;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -1089,13 +1203,15 @@ input:focus {
 }
 
 .earn-badge {
-  font-size: 0.7rem;
+  display: inline-block;
+  font-size: 0.65rem;
   font-weight: 700;
   color: #16a34a;
   background: #f0fdf4;
   padding: 0.15rem 0.5rem;
   border-radius: 99px;
   text-transform: capitalize;
+  margin-top: 3px;
 }
 
 .earn-badge.pending {
@@ -1111,6 +1227,96 @@ input:focus {
 .earn-badge.failed {
   color: #dc2626;
   background: #fef2f2;
+}
+
+.earn-badge.approved {
+  color: #16a34a;
+  background: #f0fdf4;
+}
+
+/* ── Saved Bank Cards ── */
+.saved-banks-container {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding: 0.25rem 0.25rem 0.75rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.saved-banks-container::-webkit-scrollbar {
+  display: none;
+}
+
+.saved-bank-card {
+  min-width: 220px;
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.saved-bank-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.06);
+}
+
+.saved-bank-card.active {
+  background: #fdfeff;
+  border-color: var(--primary);
+  border-width: 2px;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+}
+
+.saved-bank-card .remove-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #fef2f2;
+  color: #ef4444;
+  border: none;
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.saved-bank-card:hover .remove-btn {
+  opacity: 1;
+}
+
+.saved-bank-card h4 {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 0.25rem;
+}
+
+.saved-bank-card .acc-num {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 0.5rem;
+}
+
+.saved-bank-card .acc-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 170px;
 }
 
 /* ── Withdraw – Name Resolve Box ── */

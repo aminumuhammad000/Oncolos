@@ -121,6 +121,15 @@ const userSchema = new mongoose.Schema({
     bankCode: String,
     accountNumber: String,
     accountName: String
+  },
+  savedBankAccounts: {
+    type: [{
+      bank: String,
+      bankCode: String,
+      accountNumber: String,
+      accountName: String
+    }],
+    default: []
   }
 }, { timestamps: true });
 

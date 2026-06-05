@@ -198,7 +198,14 @@ exports.requestWithdrawal = async (req, res) => {
         
         // Save bank details for next time
         user.savedBankDetails = { bank, bankCode, accountNumber, accountName };
-        
+
+        // Also push to savedBankAccounts array (max 5, deduped by accountNumber)
+        const alreadySaved = user.savedBankAccounts.some(a => a.accountNumber === accountNumber);
+        if (!alreadySaved) {
+          user.savedBankAccounts.push({ bank, bankCode, accountNumber, accountName });
+          if (user.savedBankAccounts.length > 5) user.savedBankAccounts.shift(); // keep max 5
+        }
+
         await user.save();
 
         const withdrawal = await require('../models/Withdrawal').create({
@@ -285,6 +292,52 @@ exports.readMessages = async (req, res) => {
         await user.save();
         
         res.status(200).json({ success: true, message: 'Messages marked as read' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+exports.saveBankAccount = async (req, res) => {
+    try {
+        const { bank, bankCode, accountNumber, accountName } = req.body;
+        if (!bank || !bankCode || !accountNumber || !accountName) {
+            return res.status(400).json({ message: 'All bank details are required' });
+        }
+
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Dedup by accountNumber
+        const already = user.savedBankAccounts.some(a => a.accountNumber === accountNumber);
+        if (already) {
+            return res.status(400).json({ message: 'This account is already saved' });
+        }
+
+        user.savedBankAccounts.push({ bank, bankCode, accountNumber, accountName });
+        if (user.savedBankAccounts.length > 5) user.savedBankAccounts.shift();
+        await user.save();
+
+        res.status(200).json({ success: true, message: 'Bank account saved', data: user.savedBankAccounts });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+exports.removeBankAccount = async (req, res) => {
+    try {
+        const { index } = req.params;
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const idx = parseInt(index, 10);
+        if (isNaN(idx) || idx < 0 || idx >= user.savedBankAccounts.length) {
+            return res.status(400).json({ message: 'Invalid account index' });
+        }
+
+        user.savedBankAccounts.splice(idx, 1);
+        await user.save();
+
+        res.status(200).json({ success: true, message: 'Bank account removed', data: user.savedBankAccounts });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

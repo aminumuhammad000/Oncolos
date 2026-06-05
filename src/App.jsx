@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Home, TrendingUp, Users, User, ArrowLeft, LogOut, Copy, Gift, Shield, Eye, EyeOff, Rocket, Wallet, CreditCard, Clock, Check, ArrowDownCircle, BarChart2, X, PlusCircle, ChevronRight, MessageSquare, Headset, Send, Bell, Share2, Ticket } from 'lucide-react'
+import { Home, TrendingUp, Users, User, ArrowLeft, LogOut, Copy, Gift, Shield, Eye, EyeOff, Rocket, Wallet, CreditCard, Clock, Check, ArrowDownCircle, BarChart2, X, PlusCircle, ChevronRight, MessageSquare, Headset, Send, Bell, Share2, Ticket, Trash2 } from 'lucide-react'
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.')
   ? `http://${window.location.hostname}:5000/api`
@@ -53,6 +53,7 @@ function App() {
   const [rechargeStep, setRechargeStep] = useState('select'); // 'select' or 'pay'
   const [redeemCode, setRedeemCode] = useState('');
   const [redeemLoading, setRedeemLoading] = useState(false);
+  const [txFilter, setTxFilter] = useState('all');
 
   const handleRedeem = async (e) => {
     e.preventDefault();
@@ -80,6 +81,50 @@ function App() {
       setErrorAlert({ title: 'Redeem Failed', message: err.message });
     } finally {
       setRedeemLoading(false);
+    }
+  };
+
+  const handleRemoveBankAccount = async (index) => {
+    if (!window.confirm('Remove this saved bank account?')) return;
+    try {
+      const res = await fetch(`${API_URL}/users/remove-bank/${index}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('oncolos_token')}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUser(prev => ({ ...prev, savedBankAccounts: data.data }));
+      }
+    } catch (err) {
+      console.error('Failed to remove bank account');
+    }
+  };
+
+  const handleSaveBank = async () => {
+    if (!withdrawForm.bank || !withdrawForm.accountNumber || !withdrawForm.resolvedName) return;
+    try {
+      const res = await fetch(`${API_URL}/users/save-bank`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('oncolos_token')}`
+        },
+        body: JSON.stringify({
+          bank: bankSearchTerm,
+          bankCode: withdrawForm.bank,
+          accountNumber: withdrawForm.accountNumber,
+          accountName: withdrawForm.resolvedName
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccessAlert({ title: 'Saved!', message: 'Bank account saved to your profile.' });
+        setUser(prev => ({ ...prev, savedBankAccounts: data.data }));
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (err) {
+      setErrorAlert({ title: 'Error', message: err.message });
     }
   };
 
@@ -471,7 +516,8 @@ function App() {
             <div className="glass-card fade-in">
               <div className="auth-header">
                 <h1>Welcome Back</h1>
-                <p>Welcome to Oncolous Investment Platform, your right place to start, grow, and celebrate every step of your financial journey together</p>
+                <p>Sign in to continue your investment journey</p>
+
               </div>
               <form onSubmit={handleLogin}>
                 <div className="form-group">
@@ -514,7 +560,8 @@ function App() {
             <div className="glass-card fade-in">
               <div className="auth-header">
                 <h1>Create Account</h1>
-                <p>Welcome to Oncolous Investment Platform, your right place to start, grow, and celebrate every step of your financial journey together</p>
+                <p>Join thousands of investors today</p>
+
               </div>
               <form onSubmit={handleRegister}>
                 <div className="form-group">
@@ -636,13 +683,16 @@ function App() {
                 <div style={{ width: '70px', height: '70px', background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '2rem' }}>
                   🎁
                 </div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.75rem' }}>Welcome Bonus!</h2>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.75rem' }}>Welcome to Oncolous!</h2>
                 <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '1.5rem' }}>
+                  Welcome to Oncolous Investment Platform, your right place to start, grow, and celebrate every step of your financial journey together.
+                  <br /><br />
                   Congratulations! We've credited your account with a <strong>₦{platformSettings.welcomeBonusAmount || 600}</strong> welcome bonus to get you started.
                 </p>
                 <button className="btn btn-primary" onClick={() => setShowWelcomeModal(false)} style={{ width: '100%' }}>
                   Start Investing
                 </button>
+
               </div>
             </div>
           )}
@@ -655,7 +705,7 @@ function App() {
               </div>
               <div className="user-info">
                 <h2>{(user?.name && user.name !== 'User') ? user.name : user?.phone}</h2>
-                <p style={{ fontSize: '0.8rem', opacity: 0.7 }}>Member | {user?.phone}</p>
+                <p className="member-text" style={{ opacity: 0.7 }}>Member | {user?.phone}</p>
               </div>
             </div>
             <button
@@ -1482,6 +1532,34 @@ function App() {
               <h1 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.25rem' }}>Withdraw Funds</h1>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>Transfer your earnings to your bank account</p>
 
+              {user?.savedBankAccounts?.length > 0 && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <p style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Saved Accounts</p>
+                  <div className="saved-banks-container">
+                    {user.savedBankAccounts.map((acc, idx) => (
+                      <div 
+                        key={idx} 
+                        className={`saved-bank-card ${withdrawForm.accountNumber === acc.accountNumber ? 'active' : ''}`}
+                        onClick={() => {
+                          setWithdrawForm(prev => ({ ...prev, bank: acc.bankCode, accountNumber: acc.accountNumber, resolvedName: acc.accountName }));
+                          setBankSearchTerm(acc.bank);
+                        }}
+                      >
+                        <button 
+                          className="remove-btn"
+                          onClick={(e) => { e.stopPropagation(); handleRemoveBankAccount(idx); }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                        <h4>{acc.bank}</h4>
+                        <p className="acc-num">{acc.accountNumber}</p>
+                        <p className="acc-name">{acc.accountName}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="platform-rules-card" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '2rem' }}>
                 <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
                   <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Min. Withdrawal</p>
@@ -1536,8 +1614,20 @@ function App() {
                   />
                   {withdrawForm.isResolving && <p style={{ fontSize: '0.75rem', color: 'var(--primary)', marginTop: '0.25rem' }}>Verifying account...</p>}
                   {withdrawForm.resolvedName && (
-                    <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: '#f0fdf4', border: '1px solid #bcf0da', borderRadius: '8px', color: '#166534', fontSize: '0.875rem', fontWeight: '700' }}>
-                      Recipient: {withdrawForm.resolvedName}
+                    <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: '#f0fdf4', border: '1px solid #bcf0da', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <p style={{ fontSize: '0.7rem', color: '#166534', textTransform: 'uppercase', fontWeight: '700', marginBottom: '2px' }}>Recipient Name</p>
+                        <p style={{ color: '#065f46', fontSize: '0.9rem', fontWeight: '800' }}>{withdrawForm.resolvedName}</p>
+                      </div>
+                      {!user?.savedBankAccounts?.some(a => a.accountNumber === withdrawForm.accountNumber) && (
+                        <button 
+                          type="button" 
+                          onClick={handleSaveBank}
+                          style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', padding: '0.4rem 0.75rem', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                        >
+                          Save Account
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1579,88 +1669,143 @@ function App() {
         </div>
       )}
 
-      {/* Earnings Page */}
+      {/* Earnings / Transaction History Page */}
       {view === 'earnings' && (
         <div className="glass-card dash-view fade-in">
           <div className="profile-nav">
-            <button className="back-btn" onClick={() => setView('dashboard')}>
+            <button className="back-btn" onClick={() => { setView('dashboard'); setTxFilter('all'); }}>
               <ArrowLeft size={20} /> Back
             </button>
           </div>
-          <div style={{ padding: '0 0.5rem' }}>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.25rem' }}>Earnings History</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>All credited rewards and returns</p>
+          <div style={{ padding: '0 0.25rem' }}>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.25rem' }}>Transaction History</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>All money in &amp; out of your wallet</p>
 
-            {/* Summary */}
-            <div className="earnings-summary">
-              <div className="earning-stat">
-                <p>Total Earned</p>
-                <h3>₦{(user?.earningsHistory || []).filter(e => !['Plan Purchase', 'Admin Deduction'].includes(e.type)).reduce((acc, e) => acc + (e.amount || 0), 0).toLocaleString()}</h3>
-              </div>
-              <div className="earning-stat">
-                <p>Transactions</p>
-                <h3>{(user?.earningsHistory || []).length}</h3>
-              </div>
-            </div>
-
-            <div className="earnings-list">
-              {[
-                ...(user?.earningsHistory || []).map(e => ({ ...e, category: 'income' })),
+            {(() => {
+              const OUTFLOW_TYPES = ['Plan Purchase', 'Admin Deduction'];
+              const allEntries = [
+                ...(user?.earningsHistory || []).map(e => ({
+                  ...e,
+                  category: OUTFLOW_TYPES.includes(e.type) ? 'outflow' : 'inflow'
+                })),
                 ...(user?.withdrawalHistory || []).map(w => ({
                   id: w._id,
                   type: 'Withdrawal',
                   amount: w.amount,
                   plan: `${w.bank} • ${w.accountNumber}`,
                   date: new Date(w.createdAt).toLocaleDateString(),
+                  rawDate: w.createdAt,
                   status: w.status,
-                  category: 'withdrawal',
-                  rawDate: w.createdAt
+                  category: 'outflow'
                 }))
-              ]
-                .sort((a, b) => {
-                  const dateA = a.rawDate ? new Date(a.rawDate) : new Date(a.date);
-                  const dateB = b.rawDate ? new Date(b.rawDate) : new Date(b.date);
-                  return (dateB.getTime() || 0) - (dateA.getTime() || 0);
-                })
-                .map((entry, idx) => {
-                  const isNegative = entry.category === 'withdrawal' || entry.type === 'Plan Purchase' || entry.type === 'Admin Deduction';
-                  const sign = isNegative ? (entry.status === 'Rejected' ? '' : '-') : '+';
-                  const color = isNegative ? (entry.status === 'Rejected' ? '#64748b' : '#dc2626') : '#10b981';
-                  
-                  // Icon mapping
-                  let Icon = BarChart2;
-                  if (entry.category === 'withdrawal') Icon = ArrowDownCircle;
-                  else if (entry.type === 'Plan Purchase') Icon = CreditCard;
-                  else if (entry.type === 'Fund Deposit' || entry.type === 'Admin Deposit') Icon = Wallet;
-                  
-                  return (
-                    <div key={entry.id || idx} className="earning-item">
-                      <div className={`earning-icon-wrap ${isNegative ? 'withdraw' : ''}`} style={{
-                        background: isNegative ? '#fee2e2' : 'var(--primary-light)',
-                        color: isNegative ? '#dc2626' : 'var(--primary)'
-                      }}>
-                        <Icon size={18} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <p style={{ fontWeight: '600', fontSize: '0.9375rem' }}>{entry.type}</p>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{entry.plan} &bull; {entry.date}</p>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <p style={{ fontWeight: '700', color: color }}>
-                          {sign}₦{entry.amount.toLocaleString()}
-                        </p>
-                        <span className={`earn-badge ${entry.status.toLowerCase()}`}>{entry.status}</span>
-                      </div>
+              ].sort((a, b) => {
+                const da = a.rawDate ? new Date(a.rawDate) : new Date(a.date);
+                const db = b.rawDate ? new Date(b.rawDate) : new Date(b.date);
+                return (db.getTime() || 0) - (da.getTime() || 0);
+              });
+
+              const totalInflow  = allEntries.filter(e => e.category === 'inflow').reduce((s, e) => s + (e.amount || 0), 0);
+              const totalOutflow = allEntries.filter(e => e.category === 'outflow' && e.status !== 'Rejected').reduce((s, e) => s + (e.amount || 0), 0);
+              const pendingCount = allEntries.filter(e => e.status === 'Pending').length;
+
+              const filtered = txFilter === 'inflow'
+                ? allEntries.filter(e => e.category === 'inflow')
+                : txFilter === 'outflow'
+                  ? allEntries.filter(e => e.category === 'outflow')
+                  : allEntries;
+
+              const typeConfig = {
+                'Welcome Bonus':      { Icon: Gift,            bg: '#fdf2f8', col: '#db2777', label: 'Welcome Bonus' },
+                'Fund Deposit':       { Icon: Wallet,          bg: '#f0fdf4', col: '#16a34a', label: 'Bank Deposit' },
+                'Admin Deposit':      { Icon: Shield,          bg: '#eff6ff', col: '#2563eb', label: 'Admin Credit' },
+                'Daily Reward':       { Icon: Gift,            bg: '#fef3c7', col: '#d97706', label: 'Daily Bonus' },
+                'Gift Reward':        { Icon: Ticket,          bg: '#fdf4ff', col: '#9333ea', label: 'Gift Reward' },
+                'Referral Bonus':     { Icon: Users,           bg: '#fff7ed', col: '#ea580c', label: 'Referral Bonus' },
+                'Investment Returns': { Icon: TrendingUp,      bg: '#f0fdf4', col: '#16a34a', label: 'Investment ROI' },
+                'Plan Purchase':      { Icon: CreditCard,      bg: '#fef2f2', col: '#dc2626', label: 'Plan Purchase' },
+                'Admin Deduction':    { Icon: Shield,          bg: '#fef2f2', col: '#dc2626', label: 'Admin Deduction' },
+                'Withdrawal':         { Icon: ArrowDownCircle, bg: '#fef2f2', col: '#dc2626', label: 'Withdrawal' },
+              };
+
+              return (
+                <>
+                  {/* 4-stat summary */}
+                  <div className="tx-summary-grid">
+                    <div className="tx-stat tx-stat--green">
+                      <p>Total Inflow</p>
+                      <h3>₦{totalInflow.toLocaleString()}</h3>
                     </div>
-                  );
-                })}
-              {(!user?.earningsHistory?.length && !user?.withdrawalHistory?.length) && (
-                <div className="empty-state">No transactions found.</div>
-              )}
-            </div>
+                    <div className="tx-stat tx-stat--red">
+                      <p>Total Outflow</p>
+                      <h3>₦{totalOutflow.toLocaleString()}</h3>
+                    </div>
+                    <div className="tx-stat">
+                      <p>Transactions</p>
+                      <h3>{allEntries.length}</h3>
+                    </div>
+                    <div className="tx-stat tx-stat--amber">
+                      <p>Pending</p>
+                      <h3>{pendingCount}</h3>
+                    </div>
+                  </div>
+
+                  {/* Filter tabs */}
+                  <div className="tx-filter-tabs">
+                    {[['all', '🗂 All'], ['inflow', '⬆ Inflow'], ['outflow', '⬇ Outflow']].map(([tab, label]) => (
+                      <button
+                        key={tab}
+                        className={`tx-tab${txFilter === tab ? ' active' : ''}`}
+                        onClick={() => setTxFilter(tab)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Transaction list */}
+                  <div className="earnings-list">
+                    {filtered.length === 0 && (
+                      <div className="empty-state">No transactions found.</div>
+                    )}
+                    {filtered.map((entry, idx) => {
+                      const cfg = typeConfig[entry.type] || { Icon: BarChart2, bg: '#f1f5f9', col: '#64748b', label: entry.type };
+                      const { Icon: IconComp } = cfg;
+                      const isOutflow  = entry.category === 'outflow';
+                      const isRejected = entry.status === 'Rejected';
+                      const amtColor   = isRejected ? '#94a3b8' : isOutflow ? '#dc2626' : '#16a34a';
+                      const sign       = isRejected ? '' : isOutflow ? '−' : '+';
+
+                      return (
+                        <div key={entry.id || idx} className="earning-item">
+                          <div className="earning-icon-wrap" style={{ background: cfg.bg, color: cfg.col }}>
+                            <IconComp size={18} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontWeight: '700', fontSize: '0.9rem', marginBottom: '2px' }}>{cfg.label}</p>
+                            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {entry.plan}
+                            </p>
+                            <p style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: '1px' }}>{entry.date}</p>
+                          </div>
+                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                            <p style={{ fontWeight: '800', fontSize: '0.95rem', color: amtColor }}>
+                              {sign}₦{(entry.amount || 0).toLocaleString()}
+                            </p>
+                            <span className={`earn-badge ${(entry.status || '').toLowerCase()}`}>
+                              {entry.status}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
+
 
       {/* Redeem Page */}
       {view === 'redeem' && (
