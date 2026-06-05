@@ -78,23 +78,64 @@ exports.createVirtualAccount = async (userData) => {
 };
 
 /**
+ * Fallback list of top Nigerian banks in case API is down
+ */
+const FALLBACK_BANKS = [
+  { code: '044', name: 'Access Bank' },
+  { code: '063', name: 'Access Bank (Diamond)' },
+  { code: '050', name: 'Ecobank Nigeria' },
+  { code: '070', name: 'Fidelity Bank' },
+  { code: '011', name: 'First Bank of Nigeria' },
+  { code: '214', name: 'First City Monument Bank' },
+  { code: '058', name: 'Guaranty Trust Bank' },
+  { code: '030', name: 'Heritage Bank' },
+  { code: '301', name: 'Jaiz Bank' },
+  { code: '082', name: 'Keystone Bank' },
+  { code: '999992', name: 'Opay (Digital Bank)' },
+  { code: '999991', name: 'PalmPay' },
+  { code: '50606', name: 'Kuda Bank' },
+  { code: '076', name: 'Polaris Bank' },
+  { code: '101', name: 'Providus Bank' },
+  { code: '221', name: 'Stanbic IBTC Bank' },
+  { code: '068', name: 'Standard Chartered Bank' },
+  { code: '232', name: 'Sterling Bank' },
+  { code: '100', name: 'Suntrust Bank' },
+  { code: '102', name: 'Titans Trust Bank' },
+  { code: '032', name: 'Union Bank of Nigeria' },
+  { code: '033', name: 'United Bank For Africa' },
+  { code: '215', name: 'Unity Bank' },
+  { code: '035', name: 'Wema Bank' },
+  { code: '057', name: 'Zenith Bank' },
+  { code: '50515', name: 'Moniepoint MFB' },
+  { code: '50211', name: 'Kredi Money MFB' },
+  { code: '090110', name: 'VFD Bank' },
+  { code: '090551', name: 'FairMoney MFB' },
+  { code: '090267', name: 'Rubies MFB' },
+  { code: '090452', name: 'SmartCash PSB' },
+  { code: '090405', name: 'MTN MoMo PSB' },
+  { code: '100004', name: 'Opay' }
+];
+
+/**
  * Get List of Banks from VTStack
  */
 exports.getBanks = async () => {
     const apiKey = process.env.VTSTACK_API_KEY;
     try {
         const response = await axios.get(`${VTSTACK_BASE_URL}/banks`, {
-            headers: { 'x-api-key': apiKey }
+            headers: { 'x-api-key': apiKey },
+            timeout: 5000 // 5 second timeout
         });
         const raw = response.data.data || [];
+        if (raw.length === 0) return FALLBACK_BANKS;
         // Normalize: VTStack may return bankCode or code as the bank identifier
         return raw.map(b => ({
             code: b.bankCode || b.code || b.bank_code,
             name: b.bankName || b.name || b.bank_name
         }));
     } catch (err) {
-        console.error('VTStack Get Banks Error:', err.message);
-        return [];
+        console.error('VTStack Get Banks Error (Using fallback):', err.message);
+        return FALLBACK_BANKS;
     }
 };
 
