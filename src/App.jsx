@@ -54,6 +54,8 @@ function App() {
   const [redeemCode, setRedeemCode] = useState('');
   const [redeemLoading, setRedeemLoading] = useState(false);
   const [txFilter, setTxFilter] = useState('all');
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [bankModalSearch, setBankModalSearch] = useState('');
 
   const handleRedeem = async (e) => {
     e.preventDefault();
@@ -1578,27 +1580,87 @@ function App() {
               <form onSubmit={handleWithdrawSubmit}>
                 <div className="form-group">
                   <label>Select Your Bank</label>
-                  <input
-                    list="banks-list"
-                    value={bankSearchTerm}
-                    placeholder="Search or type your bank..."
-                    onChange={e => {
-                      const val = e.target.value;
-                      setBankSearchTerm(val);
-                      const bankObj = realBanks.find(b => b.name === val);
-                      const bankCode = bankObj ? bankObj.code : '';
-                      setWithdrawForm(prev => ({ ...prev, bank: bankCode, resolvedName: '' }));
-                      if (withdrawForm.accountNumber && withdrawForm.accountNumber.length === 10 && bankCode) {
-                        handleNameLookup(withdrawForm.accountNumber, bankCode);
-                      }
+                  <div 
+                    onClick={() => setShowBankModal(true)}
+                    style={{ 
+                      width: '100%', 
+                      padding: '0.875rem 1rem', 
+                      borderRadius: '12px', 
+                      border: '1px solid var(--border)', 
+                      fontSize: '1rem', 
+                      background: 'white', 
+                      color: withdrawForm.bank ? 'var(--text-main)' : 'var(--text-muted)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      cursor: 'pointer'
                     }}
-                    style={{ width: '100%', padding: '0.875rem 1rem', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '1rem', background: 'white', color: 'var(--text-main)', outline: 'none' }}
-                  />
-                  <datalist id="banks-list">
-                    {realBanks.filter((bank, idx, arr) => arr.findIndex(b => b.code === bank.code) === idx)
-                      .map((bank, idx) => <option key={`${bank.code}_${idx}`} value={bank.name}>{bank.name}</option>)}
-                  </datalist>
+                  >
+                    {bankSearchTerm || 'Tap to choose your bank...'}
+                    <ChevronRight size={18} />
+                  </div>
                 </div>
+
+                {/* Bank Search Modal */}
+                {showBankModal && (
+                  <div className="modal-overlay" style={{ zIndex: 1000 }}>
+                    <div className="modal-content fade-in" style={{ padding: '0', overflow: 'hidden', height: '80vh', display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Select Bank</h3>
+                        <button type="button" onClick={() => { setShowBankModal(false); setBankModalSearch(''); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)' }}>
+                          <X size={24} />
+                        </button>
+                      </div>
+                      
+                      <div style={{ padding: '1rem' }}>
+                        <input 
+                          autoFocus
+                          type="text" 
+                          placeholder="Search bank name..."
+                          value={bankModalSearch}
+                          onChange={(e) => setBankModalSearch(e.target.value)}
+                          style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid var(--border)', outline: 'none' }}
+                        />
+                      </div>
+
+                      <div style={{ flex: 1, overflowY: 'auto', padding: '0 0.5rem 1rem' }}>
+                        {realBanks
+                          .filter(b => b.name.toLowerCase().includes(bankModalSearch.toLowerCase()))
+                          .map((bank, bIdx) => (
+                          <div 
+                            key={bank.code + bIdx}
+                            onClick={() => {
+                              setBankSearchTerm(bank.name);
+                              setWithdrawForm(prev => ({ ...prev, bank: bank.code, resolvedName: '' }));
+                              setShowBankModal(false);
+                              setBankModalSearch('');
+                              if (withdrawForm.accountNumber?.length === 10) {
+                                handleNameLookup(withdrawForm.accountNumber, bank.code);
+                              }
+                            }}
+                            style={{ 
+                              padding: '1rem', 
+                              borderBottom: '1px solid #f8fafc',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.75rem',
+                              transition: 'background 0.2s',
+                              borderRadius: '8px'
+                            }}
+                            onMouseEnter={(e) => e.target.style.background = '#f8fafc'}
+                            onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                          >
+                            <div style={{ width: '32px', height: '32px', background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyCenter: 'center', fontSize: '0.8rem', fontWeight: '800' }}>
+                              {bank.name.charAt(0)}
+                            </div>
+                            <span style={{ fontSize: '0.9375rem', fontWeight: '600' }}>{bank.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="form-group">
                   <label>10-Digit Account Number</label>
