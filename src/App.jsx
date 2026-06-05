@@ -700,27 +700,37 @@ function App() {
                   <br /><br />
                   Congratulations! We've credited your account with a <strong>₦{platformSettings.welcomeBonusAmount || 600}</strong> welcome bonus to get you started.
                 </p>
-                <button className="btn btn-primary" onClick={() => setShowWelcomeModal(false)} style={{ width: '100%', marginBottom: '1rem' }}>
+
+                <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '12px', padding: '0.75rem', marginBottom: '1.25rem', textAlign: 'left' }}>
+                  <p style={{ fontSize: '0.8rem', color: '#0369a1', margin: 0, fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Send size={14} /> Join Our Community
+                  </p>
+                  <p style={{ fontSize: '0.75rem', color: '#0c4a6e', margin: '4px 0 0', opacity: 0.8 }}>
+                    Get daily updates and support in our official Telegram group.
+                  </p>
+                </div>
+
+                <button className="btn btn-primary" onClick={() => setShowWelcomeModal(false)} style={{ width: '100%', marginBottom: '0.75rem' }}>
                   Start Investing
                 </button>
-                <a
-                  href="https://chat.whatsapp.com/BB2589A94jY5lsnXYCT6qb"
-                  target="_blank"
+                <a 
+                  href="https://t.me/+WxrTYkKqS9ZjYjg0" 
+                  target="_blank" 
                   rel="noopener noreferrer"
-                  className="btn btn-secondary"
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                  className="btn btn-secondary" 
+                  style={{ 
+                    width: '100%', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
                     gap: '0.5rem',
-                    background: '#25D366',
+                    background: '#0088cc',
                     color: 'white',
                     border: 'none',
                     fontWeight: '700'
                   }}
                 >
-                  Join Official Group
+                  Join Official Telegram
                 </a>
 
               </div>
@@ -1068,9 +1078,9 @@ function App() {
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '2rem' }}>Need help? Join our community or chat with us</p>
 
             <div className="support-links" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {/* WhatsApp */}
+              {/* Telegram Group */}
               <a
-                href="https://chat.whatsapp.com/BB2589A94jY5lsnXYCT6qb"
+                href="https://t.me/+WxrTYkKqS9ZjYjg0"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="support-card"
@@ -1079,19 +1089,19 @@ function App() {
                   alignItems: 'center',
                   gap: '1.25rem',
                   padding: '1.5rem',
-                  background: '#f0fdf4',
+                  background: '#f0f9ff',
                   borderRadius: '20px',
                   textDecoration: 'none',
-                  color: '#166534',
-                  border: '1px solid #bbf7d0'
+                  color: '#075985',
+                  border: '1px solid #bae6fd'
                 }}
               >
-                <div style={{ background: '#25d366', color: 'white', padding: '0.875rem', borderRadius: '16px' }}>
-                  <MessageSquare size={28} />
+                <div style={{ background: '#0088cc', color: 'white', padding: '0.875rem', borderRadius: '16px' }}>
+                  <Send size={28} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '0.125rem' }}>WhatsApp Group</h3>
-                  <p style={{ fontSize: '0.8125rem', opacity: 0.8 }}>Join our official community for updates</p>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '0.125rem' }}>Telegram Group</h3>
+                  <p style={{ fontSize: '0.8125rem', opacity: 0.8 }}>Join our community for updates</p>
                 </div>
                 <ChevronRight size={20} />
               </a>
