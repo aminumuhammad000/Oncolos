@@ -229,6 +229,13 @@ function App() {
       setErrorAlert({ title: 'Insufficient Funds', message: 'You do not have enough balance for this withdrawal.' });
       return;
     }
+    if (!user?.hasInvested) {
+      setErrorAlert({ 
+        title: 'Activation Required', 
+        message: 'You must have at least one active investment before you can request a withdrawal. Please go to the Plans section to get started.' 
+      });
+      return;
+    }
 
     const bankName = realBanks.find(b => b.code === withdrawForm.bank)?.name || 'the selected bank';
 
@@ -693,9 +700,28 @@ function App() {
                   <br /><br />
                   Congratulations! We've credited your account with a <strong>₦{platformSettings.welcomeBonusAmount || 600}</strong> welcome bonus to get you started.
                 </p>
-                <button className="btn btn-primary" onClick={() => setShowWelcomeModal(false)} style={{ width: '100%' }}>
+                <button className="btn btn-primary" onClick={() => setShowWelcomeModal(false)} style={{ width: '100%', marginBottom: '1rem' }}>
                   Start Investing
                 </button>
+                <a
+                  href="https://chat.whatsapp.com/BB2589A94jY5lsnXYCT6qb"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary"
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    background: '#25D366',
+                    color: 'white',
+                    border: 'none',
+                    fontWeight: '700'
+                  }}
+                >
+                  Join Official Group
+                </a>
 
               </div>
             </div>
@@ -1541,15 +1567,15 @@ function App() {
                   <p style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Saved Accounts</p>
                   <div className="saved-banks-container">
                     {user.savedBankAccounts.map((acc, idx) => (
-                      <div 
-                        key={idx} 
+                      <div
+                        key={idx}
                         className={`saved-bank-card ${withdrawForm.accountNumber === acc.accountNumber ? 'active' : ''}`}
                         onClick={() => {
                           setWithdrawForm(prev => ({ ...prev, bank: acc.bankCode, accountNumber: acc.accountNumber, resolvedName: acc.accountName }));
                           setBankSearchTerm(acc.bank);
                         }}
                       >
-                        <button 
+                        <button
                           className="remove-btn"
                           onClick={(e) => { e.stopPropagation(); handleRemoveBankAccount(idx); }}
                         >
@@ -1582,15 +1608,15 @@ function App() {
               <form onSubmit={handleWithdrawSubmit}>
                 <div className="form-group">
                   <label>Select Your Bank</label>
-                  <div 
+                  <div
                     onClick={() => setShowBankModal(true)}
-                    style={{ 
-                      width: '100%', 
-                      padding: '0.875rem 1rem', 
-                      borderRadius: '12px', 
-                      border: '1px solid var(--border)', 
-                      fontSize: '1rem', 
-                      background: 'white', 
+                    style={{
+                      width: '100%',
+                      padding: '0.875rem 1rem',
+                      borderRadius: '12px',
+                      border: '1px solid var(--border)',
+                      fontSize: '1rem',
+                      background: 'white',
                       color: withdrawForm.bank ? 'var(--text-main)' : 'var(--text-muted)',
                       display: 'flex',
                       justifyContent: 'space-between',
@@ -1613,11 +1639,11 @@ function App() {
                           <X size={24} />
                         </button>
                       </div>
-                      
+
                       <div style={{ padding: '1rem' }}>
-                        <input 
+                        <input
                           autoFocus
-                          type="text" 
+                          type="text"
                           placeholder="Search bank name..."
                           value={bankModalSearch}
                           onChange={(e) => setBankModalSearch(e.target.value)}
@@ -1629,36 +1655,36 @@ function App() {
                         {realBanks
                           .filter(b => b.name.toLowerCase().includes(bankModalSearch.toLowerCase()))
                           .map((bank, bIdx) => (
-                          <div 
-                            key={bank.code + bIdx}
-                            onClick={() => {
-                              setBankSearchTerm(bank.name);
-                              setWithdrawForm(prev => ({ ...prev, bank: bank.code, resolvedName: '' }));
-                              setShowBankModal(false);
-                              setBankModalSearch('');
-                              if (withdrawForm.accountNumber?.length === 10) {
-                                handleNameLookup(withdrawForm.accountNumber, bank.code);
-                              }
-                            }}
-                            style={{ 
-                              padding: '1rem', 
-                              borderBottom: '1px solid #f8fafc',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.75rem',
-                              transition: 'background 0.2s',
-                              borderRadius: '8px'
-                            }}
-                            onMouseEnter={(e) => e.target.style.background = '#f8fafc'}
-                            onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                          >
-                            <div style={{ width: '32px', height: '32px', background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyCenter: 'center', fontSize: '0.8rem', fontWeight: '800' }}>
-                              {bank.name.charAt(0)}
+                            <div
+                              key={bank.code + bIdx}
+                              onClick={() => {
+                                setBankSearchTerm(bank.name);
+                                setWithdrawForm(prev => ({ ...prev, bank: bank.code, resolvedName: '' }));
+                                setShowBankModal(false);
+                                setBankModalSearch('');
+                                if (withdrawForm.accountNumber?.length === 10) {
+                                  handleNameLookup(withdrawForm.accountNumber, bank.code);
+                                }
+                              }}
+                              style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #f8fafc',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.75rem',
+                                transition: 'background 0.2s',
+                                borderRadius: '8px'
+                              }}
+                              onMouseEnter={(e) => e.target.style.background = '#f8fafc'}
+                              onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                            >
+                              <div style={{ width: '32px', height: '32px', background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyCenter: 'center', fontSize: '0.8rem', fontWeight: '800' }}>
+                                {bank.name.charAt(0)}
+                              </div>
+                              <span style={{ fontSize: '0.9375rem', fontWeight: '600' }}>{bank.name}</span>
                             </div>
-                            <span style={{ fontSize: '0.9375rem', fontWeight: '600' }}>{bank.name}</span>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     </div>
                   </div>
@@ -1686,7 +1712,7 @@ function App() {
                       <div style={{ padding: '0.75rem', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px' }}>
                         <p style={{ fontSize: '0.7rem', color: '#92400e', textTransform: 'uppercase', fontWeight: '700', marginBottom: '4px' }}>Verification Service Busy</p>
                         <p style={{ fontSize: '0.8rem', color: '#854d0e', marginBottom: '0.75rem' }}>The bank server is slow. Please enter your account name accurately below:</p>
-                        <input 
+                        <input
                           type="text"
                           placeholder="Full Name as seen on bank app"
                           style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #fde68a', fontSize: '0.9rem' }}
@@ -1700,8 +1726,8 @@ function App() {
                           <p style={{ color: "#065f46", fontSize: "0.9rem", fontWeight: "800" }}>{withdrawForm.resolvedName}</p>
                         </div>
                         {!user?.savedBankAccounts?.some(a => a.accountNumber === withdrawForm.accountNumber) && (
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             onClick={handleSaveBank}
                             style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', padding: '0.4rem 0.75rem', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
                           >
@@ -1715,7 +1741,7 @@ function App() {
                           <X size={12} /> Verification Failed
                         </p>
                         <p style={{ color: '#b91c1c', fontSize: '0.85rem', fontWeight: '600', margin: 0 }}>{withdrawForm.resolutionError}</p>
-                        <button 
+                        <button
                           type="button"
                           onClick={() => handleNameLookup(withdrawForm.accountNumber, withdrawForm.bank)}
                           style={{ background: 'none', border: 'none', color: '#991b1b', textDecoration: 'underline', fontSize: '0.75rem', padding: 0, cursor: 'pointer', textAlign: 'left', marginTop: '4px' }}
@@ -1724,7 +1750,7 @@ function App() {
                         </button>
                       </div>
                     ) : withdrawForm.accountNumber?.length === 10 && withdrawForm.bank && (
-                      <button 
+                      <button
                         type="button"
                         onClick={() => handleNameLookup(withdrawForm.accountNumber, withdrawForm.bank)}
                         style={{ width: '100%', padding: '0.75rem', border: '1.5px dashed var(--primary)', borderRadius: '12px', background: 'rgba(37, 99, 235, 0.02)', color: 'var(--primary)', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer' }}
@@ -1743,7 +1769,7 @@ function App() {
                     value={withdrawForm.amount}
                     onChange={(e) => setWithdrawForm(prev => ({ ...prev, amount: e.target.value }))}
                   />
-                  
+
                   {/* Quick Select Amounts */}
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
                     {[1000, 3000, 5000, 10000].map(amt => (
@@ -1751,9 +1777,9 @@ function App() {
                         key={amt}
                         type="button"
                         onClick={() => setWithdrawForm(prev => ({ ...prev, amount: amt.toString() }))}
-                        style={{ 
-                          padding: '0.4rem 0.75rem', 
-                          borderRadius: '8px', 
+                        style={{
+                          padding: '0.4rem 0.75rem',
+                          borderRadius: '8px',
                           border: `1.5px solid ${withdrawForm.amount === amt.toString() ? 'var(--primary)' : 'var(--border)'}`,
                           background: withdrawForm.amount === amt.toString() ? 'rgba(37, 99, 235, 0.05)' : 'white',
                           color: withdrawForm.amount === amt.toString() ? 'var(--primary)' : 'var(--text-main)',
@@ -1786,7 +1812,7 @@ function App() {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  style={{ 
+                  style={{
                     marginTop: '1.5rem',
                     height: '54px',
                     display: 'flex',
@@ -1846,7 +1872,7 @@ function App() {
                 return (db.getTime() || 0) - (da.getTime() || 0);
               });
 
-              const totalInflow  = allEntries.filter(e => e.category === 'inflow').reduce((s, e) => s + (e.amount || 0), 0);
+              const totalInflow = allEntries.filter(e => e.category === 'inflow').reduce((s, e) => s + (e.amount || 0), 0);
               const totalOutflow = allEntries.filter(e => e.category === 'outflow' && e.status !== 'Rejected').reduce((s, e) => s + (e.amount || 0), 0);
               const pendingCount = allEntries.filter(e => e.status === 'Pending').length;
 
@@ -1857,16 +1883,16 @@ function App() {
                   : allEntries;
 
               const typeConfig = {
-                'Welcome Bonus':      { Icon: Gift,            bg: '#fdf2f8', col: '#db2777', label: 'Welcome Bonus' },
-                'Fund Deposit':       { Icon: Wallet,          bg: '#f0fdf4', col: '#16a34a', label: 'Bank Deposit' },
-                'Admin Deposit':      { Icon: Shield,          bg: '#eff6ff', col: '#2563eb', label: 'Admin Credit' },
-                'Daily Reward':       { Icon: Gift,            bg: '#fef3c7', col: '#d97706', label: 'Daily Bonus' },
-                'Gift Reward':        { Icon: Ticket,          bg: '#fdf4ff', col: '#9333ea', label: 'Gift Reward' },
-                'Referral Bonus':     { Icon: Users,           bg: '#fff7ed', col: '#ea580c', label: 'Referral Bonus' },
-                'Investment Returns': { Icon: TrendingUp,      bg: '#f0fdf4', col: '#16a34a', label: 'Investment ROI' },
-                'Plan Purchase':      { Icon: CreditCard,      bg: '#fef2f2', col: '#dc2626', label: 'Plan Purchase' },
-                'Admin Deduction':    { Icon: Shield,          bg: '#fef2f2', col: '#dc2626', label: 'Admin Deduction' },
-                'Withdrawal':         { Icon: ArrowDownCircle, bg: '#fef2f2', col: '#dc2626', label: 'Withdrawal' },
+                'Welcome Bonus': { Icon: Gift, bg: '#fdf2f8', col: '#db2777', label: 'Welcome Bonus' },
+                'Fund Deposit': { Icon: Wallet, bg: '#f0fdf4', col: '#16a34a', label: 'Bank Deposit' },
+                'Admin Deposit': { Icon: Shield, bg: '#eff6ff', col: '#2563eb', label: 'Admin Credit' },
+                'Daily Reward': { Icon: Gift, bg: '#fef3c7', col: '#d97706', label: 'Daily Bonus' },
+                'Gift Reward': { Icon: Ticket, bg: '#fdf4ff', col: '#9333ea', label: 'Gift Reward' },
+                'Referral Bonus': { Icon: Users, bg: '#fff7ed', col: '#ea580c', label: 'Referral Bonus' },
+                'Investment Returns': { Icon: TrendingUp, bg: '#f0fdf4', col: '#16a34a', label: 'Investment ROI' },
+                'Plan Purchase': { Icon: CreditCard, bg: '#fef2f2', col: '#dc2626', label: 'Plan Purchase' },
+                'Admin Deduction': { Icon: Shield, bg: '#fef2f2', col: '#dc2626', label: 'Admin Deduction' },
+                'Withdrawal': { Icon: ArrowDownCircle, bg: '#fef2f2', col: '#dc2626', label: 'Withdrawal' },
               };
 
               return (
@@ -1912,10 +1938,10 @@ function App() {
                     {filtered.map((entry, idx) => {
                       const cfg = typeConfig[entry.type] || { Icon: BarChart2, bg: '#f1f5f9', col: '#64748b', label: entry.type };
                       const { Icon: IconComp } = cfg;
-                      const isOutflow  = entry.category === 'outflow';
+                      const isOutflow = entry.category === 'outflow';
                       const isRejected = entry.status === 'Rejected';
-                      const amtColor   = isRejected ? '#94a3b8' : isOutflow ? '#dc2626' : '#16a34a';
-                      const sign       = isRejected ? '' : isOutflow ? '−' : '+';
+                      const amtColor = isRejected ? '#94a3b8' : isOutflow ? '#dc2626' : '#16a34a';
+                      const sign = isRejected ? '' : isOutflow ? '−' : '+';
 
                       return (
                         <div key={entry.id || idx} className="earning-item">

@@ -204,9 +204,11 @@ exports.requestWithdrawal = async (req, res) => {
             return res.status(400).json({ message: 'Minimum withdrawal is ₦600' });
         }
         
-        // 3. New restriction: must have deposited and invested
-        if (!user.hasDeposited && !user.hasInvested) {
-            return res.status(403).json({ message: 'You must make a deposit and an investment before you can withdraw your welcome bonus and earnings.' });
+        // 3. New restriction: must have at least one investment to activate withdrawals
+        if (!user.hasInvested) {
+            return res.status(403).json({ 
+                message: 'Activation Required: You must have at least one active investment before you can withdraw your funds.' 
+            });
         }
 
         // 2. Deduct balance and create withdrawal record
