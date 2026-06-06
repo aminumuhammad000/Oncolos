@@ -1737,7 +1737,7 @@ function App() {
                               onMouseEnter={(e) => e.target.style.background = '#f8fafc'}
                               onMouseLeave={(e) => e.target.style.background = 'transparent'}
                             >
-                              <div style={{ width: '32px', height: '32px', background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyCenter: 'center', fontSize: '0.8rem', fontWeight: '800' }}>
+                              <div style={{ width: '32px', height: '32px', background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: '800' }}>
                                 {bank.name.charAt(0)}
                               </div>
                               <span style={{ fontSize: '0.9375rem', fontWeight: '600' }}>{bank.name}</span>
@@ -1859,6 +1859,11 @@ function App() {
                     <p style={{ fontSize: '0.75rem', color: 'var(--error)', fontWeight: '600' }}>
                       Service Fee: {platformSettings.withdrawalFeePercent || 15}% (₦{withdrawForm.amount ? (parseFloat(withdrawForm.amount) * (platformSettings.withdrawalFeePercent || 15) / 100).toLocaleString() : '0'})
                     </p>
+                    {withdrawForm.amount && parseFloat(withdrawForm.amount) > 0 && parseFloat(withdrawForm.amount) < 600 && (
+                      <p style={{ fontSize: '0.8125rem', color: '#dc2626', fontWeight: '700', padding: '0.5rem', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '8px' }}>
+                        Minimum withdrawal is ₦600. Please enter a higher amount.
+                      </p>
+                    )}
                     {withdrawForm.amount && parseFloat(withdrawForm.amount) >= 600 && (
                       <p style={{ fontSize: '0.8125rem', color: 'var(--primary)', fontWeight: '700', padding: '0.5rem', background: 'rgba(37, 99, 235, 0.05)', borderRadius: '8px' }}>
                         You will receive: ₦{(parseFloat(withdrawForm.amount) - (parseFloat(withdrawForm.amount) * (platformSettings.withdrawalFeePercent || 15) / 100)).toLocaleString()}
@@ -1878,7 +1883,7 @@ function App() {
                     justifyContent: 'center',
                     gap: '0.75rem'
                   }}
-                  disabled={!platformSettings.isWithdrawalEnabled || (!withdrawForm.resolvedName && !withdrawForm.manualName) || withdrawForm.isResolving || withdrawForm.isProcessing || !withdrawForm.amount || parseFloat(withdrawForm.amount) < 600}
+                  disabled={!platformSettings.isWithdrawalEnabled || (!withdrawForm.resolvedName && !withdrawForm.manualName) || withdrawForm.isResolving || withdrawForm.isProcessing || !withdrawForm.amount}
                 >
                   {withdrawForm.isProcessing ? (
                     <>
