@@ -108,7 +108,7 @@ exports.getSettings = async (req, res) => {
       isWelcomeBonusEnabled: true,
       welcomeBonusAmount: 600,
       isWithdrawalEnabled: true,
-      withdrawalFeePercent: 15,
+      withdrawalFeePercent: 12,
       referralL1: 20,
       referralL2: 2,
       referralL3: 1

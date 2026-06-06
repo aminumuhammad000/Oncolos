@@ -51,7 +51,7 @@ export default function AdminApp() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedInvestment, setSelectedInvestment] = useState(null);
-  const [platformSettings, setPlatformSettings] = useState({ isDailyBonusEnabled: true, isWelcomeBonusEnabled: true, welcomeBonusAmount: 600, isWithdrawalEnabled: true, withdrawalFeePercent: 15 });
+  const [platformSettings, setPlatformSettings] = useState({ isDailyBonusEnabled: true, isWelcomeBonusEnabled: true, welcomeBonusAmount: 600, isWithdrawalEnabled: true, withdrawalFeePercent: 12 });
   const [gateway, setGateway] = useState({ provider: 'VTStack (Recommended)', mode: 'test', publicKey: '', payoutKey: '', webhookSecret: '' });
   const [emailSettings, setEmailSettings] = useState({ smtpEmail: '', appPassword: '' });
   const [withdrawals, setWithdrawals] = useState([]);
@@ -1073,9 +1073,9 @@ export default function AdminApp() {
                     <label>Withdrawal Fee (%)</label>
                     <input 
                       type="number" 
-                      value={platformSettings.withdrawalFeePercent || 15}
+                      value={platformSettings.withdrawalFeePercent || 12}
                       onChange={(e) => setPlatformSettings({...platformSettings, withdrawalFeePercent: Number(e.target.value)})}
-                      placeholder="15"
+                      placeholder="12"
                     />
                     <p className="muted" style={{fontSize: '0.7rem', marginTop: '0.25rem'}}>Percentage charged per withdrawal transaction.</p>
                   </div>

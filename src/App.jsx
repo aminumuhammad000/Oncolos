@@ -883,7 +883,7 @@ function App() {
             <div className="rule-chip"><CreditCard size={16} /> Min With: ₦600</div>
             <div className="rule-chip"><Clock size={16} /> Time: 10:30–4:30</div>
             <div className="rule-chip"><Gift size={16} /> Gift: 6pm</div>
-            <div className="rule-chip rule-chip--warning"><ArrowDownCircle size={16} /> Withdrawal Charge: 15%</div>
+            <div className="rule-chip rule-chip--warning"><ArrowDownCircle size={16} /> Withdrawal Charge: 12%</div>
             <div className="rule-chip rule-chip--referral"><Users size={16} /> Referral L1: 20%</div>
             <div className="rule-chip rule-chip--referral"><Users size={16} /> Referral L2: 2%</div>
             <div className="rule-chip rule-chip--referral"><Users size={16} /> Referral L3: 1%</div>
@@ -1862,18 +1862,29 @@ function App() {
                       Available: ₦{(user?.balance || 0).toLocaleString()}
                     </p>
                     <p style={{ fontSize: '0.75rem', color: 'var(--error)', fontWeight: '600' }}>
-                      Service Fee: {platformSettings.withdrawalFeePercent || 15}% (₦{withdrawForm.amount ? (parseFloat(withdrawForm.amount) * (platformSettings.withdrawalFeePercent || 15) / 100).toLocaleString() : '0'})
+                      Service Fee (12%): ₦{withdrawForm.amount ? (parseFloat(withdrawForm.amount) * (platformSettings.withdrawalFeePercent || 12) / 100).toLocaleString() : '0'}
                     </p>
+                    {withdrawForm.amount && parseFloat(withdrawForm.amount) > 0 && (
+                      <p style={{ fontSize: '0.75rem', color: 'var(--error)', fontWeight: '600' }}>
+                        Payment Processing Fee: ₦{(Math.ceil(parseFloat(withdrawForm.amount) / 25000) * 35).toLocaleString()} (₦35 per ₦25,000)
+                      </p>
+                    )}
                     {withdrawForm.amount && parseFloat(withdrawForm.amount) > 0 && parseFloat(withdrawForm.amount) < 600 && (
                       <p style={{ fontSize: '0.8125rem', color: '#dc2626', fontWeight: '700', padding: '0.5rem', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '8px' }}>
                         Minimum withdrawal is ₦600. Please enter a higher amount.
                       </p>
                     )}
-                    {withdrawForm.amount && parseFloat(withdrawForm.amount) >= 600 && (
-                      <p style={{ fontSize: '0.8125rem', color: 'var(--primary)', fontWeight: '700', padding: '0.5rem', background: 'rgba(37, 99, 235, 0.05)', borderRadius: '8px' }}>
-                        You will receive: ₦{(parseFloat(withdrawForm.amount) - (parseFloat(withdrawForm.amount) * (platformSettings.withdrawalFeePercent || 15) / 100)).toLocaleString()}
-                      </p>
-                    )}
+                    {withdrawForm.amount && parseFloat(withdrawForm.amount) >= 600 && (() => {
+                      const amt = parseFloat(withdrawForm.amount);
+                      const pctFee = amt * (platformSettings.withdrawalFeePercent || 12) / 100;
+                      const procFee = Math.ceil(amt / 25000) * 35;
+                      const receive = amt - pctFee - procFee;
+                      return (
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--primary)', fontWeight: '700', padding: '0.5rem', background: 'rgba(37, 99, 235, 0.05)', borderRadius: '8px' }}>
+                          You will receive: ₦{receive.toLocaleString()}
+                        </p>
+                      );
+                    })()}
                   </div>
                 </div>
 

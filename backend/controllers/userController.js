@@ -4,114 +4,114 @@ const Promotion = require('../models/Promotion');
 const { createVirtualAccount, getBanks, verifyBankAccount, initiatePayout } = require('../utils/vtstack');
 
 exports.claimDailyBonus = async (req, res) => {
-  try {
-    // 1. Check if global bonus is enabled
-    const bonusToggle = await Settings.findOne({ key: 'isDailyBonusEnabled' });
-    if (bonusToggle && bonusToggle.value === false) {
-      return res.status(400).json({ message: 'Daily bonus is currently disabled by admin.' });
+    try {
+        // 1. Check if global bonus is enabled
+        const bonusToggle = await Settings.findOne({ key: 'isDailyBonusEnabled' });
+        if (bonusToggle && bonusToggle.value === false) {
+            return res.status(400).json({ message: 'Daily bonus is currently disabled by admin.' });
+        }
+
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // 2. Check if claimed in last 23 hours
+        if (user.lastClaimed) {
+            const hoursSinceClaim = (new Date() - new Date(user.lastClaimed)) / (1000 * 60 * 60);
+            if (hoursSinceClaim < 23) {
+                return res.status(400).json({ message: 'You have already claimed your bonus recently. Please come back after 23 hours.' });
+            }
+        }
+
+        const bonus = 30;
+        user.balance += bonus;
+        user.withdrawBalance += bonus;
+        user.lastClaimed = new Date();
+
+        user.earningsHistory.push({
+            id: Date.now().toString(),
+            type: 'Daily Reward',
+            amount: bonus,
+            plan: 'System Bonus',
+            date: new Date().toLocaleDateString(),
+            rawDate: new Date(),
+            status: 'Completed'
+        });
+
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Daily bonus of ₦${bonus} claimed!`,
+            newBalance: user.balance
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
-
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    // 2. Check if claimed in last 23 hours
-    if (user.lastClaimed) {
-      const hoursSinceClaim = (new Date() - new Date(user.lastClaimed)) / (1000 * 60 * 60);
-      if (hoursSinceClaim < 23) {
-        return res.status(400).json({ message: 'You have already claimed your bonus recently. Please come back after 23 hours.' });
-      }
-    }
-
-    const bonus = 30;
-    user.balance += bonus;
-    user.withdrawBalance += bonus;
-    user.lastClaimed = new Date();
-    
-    user.earningsHistory.push({
-      id: Date.now().toString(),
-      type: 'Daily Reward',
-      amount: bonus,
-      plan: 'System Bonus',
-      date: new Date().toLocaleDateString(),
-      rawDate: new Date(),
-      status: 'Completed'
-    });
-
-    await user.save();
-
-    res.status(200).json({
-      success: true,
-      message: `Daily bonus of ₦${bonus} claimed!`,
-      newBalance: user.balance
-    });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
 };
 
 exports.generateVirtualAccount = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    if (user.virtualAccount && user.virtualAccount.number) {
-      return res.status(400).json({ message: 'You already have a virtual account.' });
-    }
-
-    // Prepare data for VTStack
-    const displayName = user.name || 'User';
-    const nameParts = displayName.trim().split(' ');
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(' ') || 'User';
-
-    // Call VTStack to create real virtual account
-    let vtResponse;
-    let fallbackUsed = false;
-
     try {
-        // Strictly use VTStack only as requested
-        vtResponse = await createVirtualAccount({
-            _id: user._id,
-            firstName,
-            lastName,
-            email: user.email,
-            phone: user.phone,
-            bvn: user.bvn || undefined
-        });
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
 
-        if (vtResponse && (vtResponse.status === 'success' || vtResponse.status === true)) {
-            const { accountNumber, bankName, accountName } = vtResponse.data;
-            user.virtualAccount = {
-                number: accountNumber,
-                bank: bankName,
-                name: accountName
-            };
-            await user.save();
-        } else {
-            console.log('VTStack Creation Failed. Response:', vtResponse);
-            return res.status(vtResponse?.statusCode || 400).json({ 
-                success: false, 
-                message: vtResponse?.message || 'VTStack failed to generate account. Please check your BVN and API keys.' 
+        if (user.virtualAccount && user.virtualAccount.number) {
+            return res.status(400).json({ message: 'You already have a virtual account.' });
+        }
+
+        // Prepare data for VTStack
+        const displayName = user.name || 'User';
+        const nameParts = displayName.trim().split(' ');
+        const firstName = nameParts[0];
+        const lastName = nameParts.slice(1).join(' ') || 'User';
+
+        // Call VTStack to create real virtual account
+        let vtResponse;
+        let fallbackUsed = false;
+
+        try {
+            // Strictly use VTStack only as requested
+            vtResponse = await createVirtualAccount({
+                _id: user._id,
+                firstName,
+                lastName,
+                email: user.email,
+                phone: user.phone,
+                bvn: user.bvn || undefined
+            });
+
+            if (vtResponse && (vtResponse.status === 'success' || vtResponse.status === true)) {
+                const { accountNumber, bankName, accountName } = vtResponse.data;
+                user.virtualAccount = {
+                    number: accountNumber,
+                    bank: bankName,
+                    name: accountName
+                };
+                await user.save();
+            } else {
+                console.log('VTStack Creation Failed. Response:', vtResponse);
+                return res.status(vtResponse?.statusCode || 400).json({
+                    success: false,
+                    message: vtResponse?.message || 'VTStack failed to generate account. Please check your BVN and API keys.'
+                });
+            }
+        } catch (vtErr) {
+            console.error('VTStack API Error:', vtErr.message);
+            return res.status(500).json({
+                success: false,
+                message: 'Virtual account provider (VTStack) is currently unavailable.'
             });
         }
-    } catch (vtErr) {
-        console.error('VTStack API Error:', vtErr.message);
-        return res.status(500).json({ 
-            success: false, 
-            message: 'Virtual account provider (VTStack) is currently unavailable.' 
+
+        res.status(200).json({
+            success: true,
+            message: 'Real virtual account created successfully via VTStack!',
+            virtualAccount: user.virtualAccount
         });
+
+    } catch (err) {
+        console.error('Account Generation Error:', err);
+        res.status(500).json({ message: err.message });
     }
-
-    res.status(200).json({
-      success: true,
-      message: 'Real virtual account created successfully via VTStack!',
-      virtualAccount: user.virtualAccount
-    });
-
-  } catch (err) {
-    console.error('Account Generation Error:', err);
-    res.status(500).json({ message: err.message });
-  }
 };
 
 exports.getBankList = async (req, res) => {
@@ -141,13 +141,13 @@ exports.verifyBankAccount = async (req, res) => {
     } catch (err) {
         const errorMsg = err.response?.status ? `VTStack API Error ${err.response.status}` : err.message;
         console.warn('Verify Account Warning:', errorMsg);
-        
+
         // Check if it's a 502/504/Timeout (Service Down)
         const isDown = err.response?.status >= 500 || err.code === 'ECONNABORTED' || err.message.includes('timeout');
-        
+
         if (isDown) {
-            return res.status(200).json({ 
-                success: true, 
+            return res.status(200).json({
+                success: true,
                 data: {
                     accountName: 'SERVICE_UNAVAILABLE',
                     accountNumber: accountNumber,
@@ -165,7 +165,7 @@ exports.updatePassword = async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
         const user = await User.findById(req.user.id).select('+password');
-        
+
         if (!user || !(await user.comparePassword(currentPassword, user.password))) {
             return res.status(401).json({ message: 'Current password is incorrect' });
         }
@@ -181,7 +181,7 @@ exports.updatePassword = async (req, res) => {
 exports.requestWithdrawal = async (req, res) => {
     try {
         const { amount, bank, bankCode, accountNumber, accountName } = req.body;
-        
+
         // 1. Check if withdrawals are enabled globally
         const withdrawalSetting = await Settings.findOne({ key: 'isWithdrawalEnabled' });
         if (withdrawalSetting && withdrawalSetting.value === false) {
@@ -189,8 +189,11 @@ exports.requestWithdrawal = async (req, res) => {
         }
 
         const feeSetting = await Settings.findOne({ key: 'withdrawalFeePercent' });
-        const feePercent = feeSetting ? Number(feeSetting.value) : 15;
-        const fee = (amount * feePercent) / 100;
+        const feePercent = feeSetting ? Number(feeSetting.value) : 12;
+        const percentFee = (amount * feePercent) / 100;
+        // ₦35 processing fee per every ₦25,000 block (rounded up)
+        const processingFee = Math.ceil(amount / 25000) * 35;
+        const fee = percentFee + processingFee;
         const netAmount = amount - fee;
 
         const user = await User.findById(req.user.id);
@@ -203,28 +206,28 @@ exports.requestWithdrawal = async (req, res) => {
         if (amount < 600) {
             return res.status(400).json({ message: 'Minimum withdrawal is ₦600' });
         }
-        
+
         // Must have at least one investment to activate withdrawals
         if (!user.hasInvested) {
-            return res.status(403).json({ 
-                message: 'Activation Required: You must have at least one active investment before you can withdraw your funds.' 
+            return res.status(403).json({
+                message: 'Activation Required: You must have at least one active investment before you can withdraw your funds.'
             });
         }
 
         // Deduct balance immediately
         user.balance -= amount;
         user.withdrawBalance -= amount;
-        
+
         // Push to earnings history for visibility in the Earning Page
         const historyId = Date.now().toString();
         user.earningsHistory.unshift({
-          id: historyId,
-          type: 'Withdrawal',
-          amount: amount,
-          plan: `${bank} • ${accountNumber}`,
-          date: new Date().toLocaleDateString(),
-          rawDate: new Date(),
-          status: 'Pending'
+            id: historyId,
+            type: 'Withdrawal',
+            amount: amount,
+            plan: `${bank} • ${accountNumber}`,
+            date: new Date().toLocaleDateString(),
+            rawDate: new Date(),
+            status: 'Pending'
         });
 
         // Save bank details for next time
@@ -233,8 +236,8 @@ exports.requestWithdrawal = async (req, res) => {
         // Also push to savedBankAccounts array (max 5, deduped by accountNumber)
         const alreadySaved = user.savedBankAccounts.some(a => a.accountNumber === accountNumber);
         if (!alreadySaved) {
-          user.savedBankAccounts.push({ bank, bankCode, accountNumber, accountName });
-          if (user.savedBankAccounts.length > 5) user.savedBankAccounts.shift();
+            user.savedBankAccounts.push({ bank, bankCode, accountNumber, accountName });
+            if (user.savedBankAccounts.length > 5) user.savedBankAccounts.shift();
         }
 
         await user.save();
@@ -290,11 +293,11 @@ exports.requestWithdrawal = async (req, res) => {
 
             user.balance += amount;
             user.withdrawBalance += amount;
-            
+
             // Update status in earnings history to Rejected or Refunded
             const histEntry = user.earningsHistory.find(h => h.id === historyId);
             if (histEntry) histEntry.status = 'Rejected';
-            
+
             await user.save();
 
             // Mark withdrawal as rejected with reason
@@ -335,7 +338,7 @@ exports.redeemCode = async (req, res) => {
         const bonus = promo.bonusAmount || 0;
         user.balance += bonus;
         user.withdrawBalance += bonus;
-        
+
         user.earningsHistory.push({
             id: Date.now().toString(),
             type: 'Gift Reward',
@@ -364,10 +367,10 @@ exports.readMessages = async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
-        
+
         user.messages.forEach(m => m.read = true);
         await user.save();
-        
+
         res.status(200).json({ success: true, message: 'Messages marked as read' });
     } catch (err) {
         res.status(500).json({ message: err.message });
