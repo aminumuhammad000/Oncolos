@@ -2128,7 +2128,7 @@ function App() {
               ) : (
                 <div style={{ padding: '1.25rem', background: '#f0f9ff', borderRadius: '15px', border: '1px solid #bae6fd' }}>
                   <p style={{ fontSize: '0.8125rem', color: '#0c4a6e', lineHeight: '1.6' }}>
-                    Codes are shared daily on our official Telegram channel and during special community events. Make sure you follow us to stay updated!
+                    Codes are shared daily on our official Telegram &amp; WhatsApp channels and during special community events. Make sure you follow us to stay updated!
                   </p>
                 </div>
               )}
