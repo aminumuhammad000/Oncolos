@@ -248,6 +248,8 @@ exports.requestWithdrawal = async (req, res) => {
             user: user._id,
             amount,
             fee,
+            serviceFee: percentFee,
+            processingFee: processingFee,
             netAmount,
             bank,
             bankCode,
@@ -258,8 +260,13 @@ exports.requestWithdrawal = async (req, res) => {
 
         // Attempt automatic payout via VTStack immediately
         try {
+            // User receives: amount - our_fee - gateway_fee
+            // We send to VTStack: amount - our_fee
+            // VTStack then deducts: gateway_fee
+            const payoutAmount = amount - percentFee;
+
             const payoutResult = await initiatePayout({
-                amount: netAmount,   // naira — initiatePayout converts to kobo internally
+                amount: payoutAmount,   // naira — initiatePayout converts to kobo internally
                 bankCode,
                 accountNumber,
                 accountName,
@@ -281,7 +288,7 @@ exports.requestWithdrawal = async (req, res) => {
 
             return res.status(201).json({
                 success: true,
-                message: `Your withdrawal of ₦${amount.toLocaleString()} has been processed and sent to your bank account.`,
+                message: `Your withdrawal of ₦${amount.toLocaleString()} has been processed. Our service fee (₦${percentFee}) was deducted, and the payment gateway fee (₦${processingFee}) will be deducted per transfer. You will receive ₦${netAmount.toLocaleString()}.`,
                 data: { withdrawal, user },
                 newBalance: user.balance
             });

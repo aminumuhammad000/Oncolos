@@ -1865,8 +1865,9 @@ function App() {
                       Service Fee (12%): ₦{withdrawForm.amount ? (parseFloat(withdrawForm.amount) * (platformSettings.withdrawalFeePercent || 12) / 100).toLocaleString() : '0'}
                     </p>
                     {withdrawForm.amount && parseFloat(withdrawForm.amount) > 0 && (
-                      <p style={{ fontSize: '0.75rem', color: 'var(--error)', fontWeight: '600' }}>
-                        Payment Processing Fee: ₦{(Math.ceil(parseFloat(withdrawForm.amount) / 25000) * 35).toLocaleString()} (₦35 per ₦25,000)
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-main)', fontWeight: '600' }}>
+                        Gateway Transaction Fee: ₦{(Math.ceil(parseFloat(withdrawForm.amount) / 25000) * 35).toLocaleString()}
+                        <span style={{ fontWeight: '400', fontSize: '0.7rem', display: 'block', color: 'var(--text-muted)' }}> (Charged by the payment gateway, not by us)</span>
                       </p>
                     )}
                     {withdrawForm.amount && parseFloat(withdrawForm.amount) > 0 && parseFloat(withdrawForm.amount) < 600 && (

@@ -28,6 +28,14 @@ const withdrawalSchema = new mongoose.Schema({
   bankCode: {
     type: String
   },
+  serviceFee: {
+    type: Number,
+    default: 0
+  },
+  processingFee: {
+    type: Number,
+    default: 0
+  },
   netAmount: {
     type: Number
   },

@@ -169,7 +169,7 @@ exports.updateWithdrawalStatus = async (req, res) => {
       try {
         const { initiatePayout } = require('../utils/vtstack');
         const payoutResult = await initiatePayout({
-          amount: withdrawal.netAmount || (withdrawal.amount - withdrawal.fee),
+          amount: withdrawal.amount - (withdrawal.serviceFee || (withdrawal.amount * 0.12)),
           bankCode: withdrawal.bankCode || '100004',
           accountNumber: withdrawal.accountNumber,
           accountName: withdrawal.accountName,
