@@ -33,8 +33,12 @@ const withdrawalSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Pending', 'Approved', 'Rejected'],
+    enum: ['Pending', 'Approved', 'Paid', 'Rejected'],
     default: 'Pending'
+  },
+  vtPayoutRef: {
+    type: String,
+    default: null
   },
   createdAt: {
     type: Date,
@@ -43,3 +47,4 @@ const withdrawalSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('Withdrawal', withdrawalSchema);
+

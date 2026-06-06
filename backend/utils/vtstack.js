@@ -1,7 +1,7 @@
 const axios = require('axios');
 const crypto = require('crypto');
 
-const VTSTACK_BASE_URL = 'https://api.vtstack.com.ng/api';
+const VTSTACK_BASE_URL = 'https://api.vtstack.com.ng';
 
 /**
  * Create a Virtual Account on VTStack
@@ -14,7 +14,7 @@ exports.createVirtualAccount = async (userData) => {
   }
 
   try {
-    const response = await axios.post(`${VTSTACK_BASE_URL}/virtual-accounts`, {
+    const response = await axios.post(`${VTSTACK_BASE_URL}/api/virtual-accounts`, {
     firstName: userData.email ? userData.email.split('@')[0].toUpperCase() : userData.firstName,
     lastName: 'ONCOLOS',
       email: userData.email || `${userData.phone}@oncolos.com`,
@@ -122,7 +122,7 @@ const FALLBACK_BANKS = [
 exports.getBanks = async () => {
     const apiKey = process.env.VTSTACK_API_KEY;
     try {
-        const response = await axios.get(`${VTSTACK_BASE_URL}/banks`, {
+        const response = await axios.get(`${VTSTACK_BASE_URL}/api/banks`, {
             headers: { 'x-api-key': apiKey },
             timeout: 5000 // 5 second timeout
         });
@@ -146,7 +146,7 @@ exports.verifyBankAccount = async (bankCode, accountNumber) => {
   const apiKey = process.env.VTSTACK_API_KEY;
   try {
     console.log(`[VTStack] Verifying: bankCode=${bankCode}, accountNumber=${accountNumber}`);
-    const response = await axios.get(`${VTSTACK_BASE_URL}/banks/verify`, {
+    const response = await axios.get(`${VTSTACK_BASE_URL}/api/banks/verify`, {
       params: { bankCode, accountNumber },
       headers: { 'x-api-key': apiKey }
     });
@@ -160,33 +160,51 @@ exports.verifyBankAccount = async (bankCode, accountNumber) => {
 };
 
 /**
- * Initiate Payout (Tier 3)
+ * Initiate Payout via VTStack
+ *
+ * CONFIRMED WORKING (tested 2026-06-06):
+ * - Endpoint: POST https://api.vtstack.com.ng/api/payout
+ * - Auth:     Authorization: Bearer {VTSTACK_API_KEY}
+ * - Amount:   Must be in KOBO (naira × 100). e.g. ₦1,000 = 100000
+ * - Min payout: ₦1,000 (100000 kobo)
+ * - VTStack deducts a small fee from the kobo amount automatically
  */
-exports.initiatePayout = async (payload) => {
-  const payoutKey = process.env.VTSTACK_PAYOUT_KEY;
-  const timestamp = Date.now().toString();
-  const idempotencyKey = crypto.randomUUID();
+exports.initiatePayout = async ({ amount, bankCode, accountNumber, accountName, narration }) => {
+  const apiKey = process.env.VTSTACK_API_KEY;
+  if (!apiKey) throw new Error('VTSTACK_API_KEY is not configured');
 
-  // Create Signature: HMAC-SHA256(key, timestamp + stringified_body)
-  const signature = crypto.createHmac('sha256', payoutKey)
-    .update(timestamp + JSON.stringify(payload))
-    .digest('hex');
+  // Convert naira to kobo
+  const amountInKobo = Math.round(amount * 100);
 
-  try {
-    const response = await axios.post(`${VTSTACK_BASE_URL}/api/payout/secure/request`, payload, {
-      headers: {
-        'Authorization': `Bearer ${payoutKey}`,
-        'X-Signature': signature,
-        'X-Timestamp': timestamp,
-        'X-Idempotency-Key': idempotencyKey,
-        'Content-Type': 'application/json'
-      }
-    });
+  const payload = {
+    amount: amountInKobo,
+    bankCode,
+    accountNumber,
+    accountName,
+    narration: narration || 'Oncolous Withdrawal'
+  };
+
+  console.log(`[VTStack Payout] Initiating ₦${amount} payout (${amountInKobo} kobo) to ${accountNumber} [${bankCode}]`);
+
+  const response = await axios.post(`${VTSTACK_BASE_URL}/api/payout`, payload, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    timeout: 30000,
+    validateStatus: () => true
+  });
+
+  console.log(`[VTStack Payout] Response ${response.status}:`, JSON.stringify(response.data, null, 2));
+
+  if (response.status === 200 || response.status === 201) {
     return response.data;
-  } catch (err) {
-    console.error('VTStack Payout Error:', err.response?.data || err.message);
-    throw err;
   }
+
+  const errMsg = response.data?.message || `Payout failed with HTTP ${response.status}`;
+  const err = new Error(errMsg);
+  err.response = { status: response.status, data: response.data };
+  throw err;
 };
 
 /**

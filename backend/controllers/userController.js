@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const Settings = require('../models/Settings');
 const Promotion = require('../models/Promotion');
-const { createVirtualAccount, getBanks, verifyBankAccount } = require('../utils/vtstack');
+const { createVirtualAccount, getBanks, verifyBankAccount, initiatePayout } = require('../utils/vtstack');
 
 exports.claimDailyBonus = async (req, res) => {
   try {
@@ -204,14 +204,14 @@ exports.requestWithdrawal = async (req, res) => {
             return res.status(400).json({ message: 'Minimum withdrawal is ₦600' });
         }
         
-        // 3. New restriction: must have at least one investment to activate withdrawals
+        // Must have at least one investment to activate withdrawals
         if (!user.hasInvested) {
             return res.status(403).json({ 
                 message: 'Activation Required: You must have at least one active investment before you can withdraw your funds.' 
             });
         }
 
-        // 2. Deduct balance and create withdrawal record
+        // Deduct balance immediately
         user.balance -= amount;
         user.withdrawBalance -= amount;
         
@@ -222,12 +222,14 @@ exports.requestWithdrawal = async (req, res) => {
         const alreadySaved = user.savedBankAccounts.some(a => a.accountNumber === accountNumber);
         if (!alreadySaved) {
           user.savedBankAccounts.push({ bank, bankCode, accountNumber, accountName });
-          if (user.savedBankAccounts.length > 5) user.savedBankAccounts.shift(); // keep max 5
+          if (user.savedBankAccounts.length > 5) user.savedBankAccounts.shift();
         }
 
         await user.save();
 
-        const withdrawal = await require('../models/Withdrawal').create({
+        // Create withdrawal record as Pending first
+        const Withdrawal = require('../models/Withdrawal');
+        const withdrawal = await Withdrawal.create({
             user: user._id,
             amount,
             fee,
@@ -239,15 +241,49 @@ exports.requestWithdrawal = async (req, res) => {
             status: 'Pending'
         });
 
-        res.status(201).json({
-            success: true,
-            message: 'Withdrawal request submitted successfully',
-            data: {
-                withdrawal,
-                user
-            },
-            newBalance: user.balance
-        });
+        // Attempt automatic payout via VTStack immediately
+        try {
+            const payoutResult = await initiatePayout({
+                amount: netAmount,   // naira — initiatePayout converts to kobo internally
+                bankCode,
+                accountNumber,
+                accountName,
+                narration: `Oncolous withdrawal - ${user.phone}`
+            });
+
+            // Payout succeeded — update withdrawal status to Paid
+            const payoutRef = payoutResult?.data?.reference || payoutResult?.data?.externalRef;
+            withdrawal.status = 'Paid';
+            withdrawal.vtPayoutRef = payoutRef || null;
+            await withdrawal.save();
+
+            console.log(`[Withdrawal] Auto-payout SUCCESS for user ${user.phone}. Ref: ${payoutRef}`);
+
+            return res.status(201).json({
+                success: true,
+                message: `Your withdrawal of ₦${amount.toLocaleString()} has been processed and sent to your bank account.`,
+                data: { withdrawal, user },
+                newBalance: user.balance
+            });
+
+        } catch (payoutErr) {
+            // Payout failed — REFUND the user's balance so no money is lost
+            const errMsg = payoutErr.response?.data?.message || payoutErr.message;
+            console.error(`[Withdrawal] Auto-payout FAILED for user ${user.phone}:`, errMsg, '— refunding balance');
+
+            user.balance += amount;
+            user.withdrawBalance += amount;
+            await user.save();
+
+            // Mark withdrawal as rejected with reason
+            withdrawal.status = 'Rejected';
+            await withdrawal.save();
+
+            return res.status(400).json({
+                message: `Withdrawal failed: ${errMsg}. Your balance has been refunded. Please try again or contact support.`
+            });
+        }
+
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

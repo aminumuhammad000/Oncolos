@@ -162,9 +162,10 @@ exports.updateWithdrawalStatus = async (req, res) => {
     await withdrawal.save();
 
     let payoutWarning = null;
+    let payoutRef = null;
 
     if (status === 'Approved') {
-      // Attempt automated payout - non-blocking
+      // Attempt automated payout via VTStack
       try {
         const { initiatePayout } = require('../utils/vtstack');
         const payoutResult = await initiatePayout({
@@ -172,12 +173,21 @@ exports.updateWithdrawalStatus = async (req, res) => {
           bankCode: withdrawal.bankCode || '100004',
           accountNumber: withdrawal.accountNumber,
           accountName: withdrawal.accountName,
-          narration: `Withdrawal for ${withdrawal.user?.phone || 'User'}`
+          narration: `Oncolous withdrawal for ${withdrawal.user?.phone || 'User'}`
         });
-        console.log('Automated Payout Success:', payoutResult);
+
+        // Store payout reference for tracking
+        payoutRef = payoutResult?.data?.reference || payoutResult?.data?.externalRef;
+        if (payoutRef) {
+          withdrawal.vtPayoutRef = payoutRef;
+          withdrawal.status = 'Paid';
+          await withdrawal.save();
+        }
+
+        console.log('[Admin] Automated Payout Success:', payoutResult);
       } catch (payoutErr) {
         const errMsg = payoutErr.response?.data?.message || payoutErr.message;
-        console.error('Automated Payout Failed (manual transfer required):', errMsg);
+        console.error('[Admin] Automated Payout Failed (manual transfer required):', errMsg);
         payoutWarning = `Approved in system, but automated bank transfer failed: ${errMsg}. Please process manually.`;
       }
     }
@@ -185,6 +195,7 @@ exports.updateWithdrawalStatus = async (req, res) => {
     res.status(200).json({ 
       success: true, 
       message: `Withdrawal ${status.toLowerCase()} successfully`,
+      ...(payoutRef && { payoutReference: payoutRef }),
       ...(payoutWarning && { warning: payoutWarning })
     });
   } catch (err) {

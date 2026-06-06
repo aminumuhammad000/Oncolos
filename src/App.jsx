@@ -260,8 +260,8 @@ function App() {
 
       setUser(data.data.user);
       setSuccessAlert({
-        title: 'Submission Successful!',
-        message: `Your withdrawal request for ₦${amount.toLocaleString()} has been received and is being processed.`
+        title: '✅ Withdrawal Successful!',
+        message: `₦${amount.toLocaleString()} has been sent to your bank account. Please allow a few minutes for it to arrive.`
       });
       setWithdrawForm({ bank: '', accountNumber: '', resolvedName: '', amount: '', isResolving: false, isProcessing: false });
       setView('dashboard');
@@ -706,7 +706,7 @@ function App() {
                     <Send size={14} /> Join Our Community
                   </p>
                   <p style={{ fontSize: '0.75rem', color: '#0c4a6e', margin: '4px 0 0', opacity: 0.8 }}>
-                    Get daily updates and support in our official Telegram group.
+                    Get daily updates and support in our official Telegram &amp; WhatsApp groups.
                   </p>
                 </div>
 
@@ -727,10 +727,30 @@ function App() {
                     background: '#0088cc',
                     color: 'white',
                     border: 'none',
-                    fontWeight: '700'
+                    fontWeight: '700',
+                    marginBottom: '0.75rem'
                   }}
                 >
                   Join Official Telegram
+                </a>
+                <a
+                  href="https://chat.whatsapp.com/BB2589A94jY5lsnXYCT6qb"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary"
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    background: '#25D366',
+                    color: 'white',
+                    border: 'none',
+                    fontWeight: '700'
+                  }}
+                >
+                  Join WhatsApp Group
                 </a>
 
               </div>
@@ -1106,7 +1126,7 @@ function App() {
                 <ChevronRight size={20} />
               </a>
 
-              {/* Telegram */}
+              {/* Telegram Channel */}
               <a
                 href="https://t.me/+WxrTYkKqS9ZjYjg0"
                 target="_blank"
@@ -1130,6 +1150,34 @@ function App() {
                 <div style={{ flex: 1 }}>
                   <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '0.125rem' }}>Telegram Channel</h3>
                   <p style={{ fontSize: '0.8125rem', opacity: 0.8 }}>Get the latest news and investment tips</p>
+                </div>
+                <ChevronRight size={20} />
+              </a>
+
+              {/* WhatsApp Group */}
+              <a
+                href="https://chat.whatsapp.com/BB2589A94jY5lsnXYCT6qb"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="support-card"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1.25rem',
+                  padding: '1.5rem',
+                  background: '#f0fdf4',
+                  borderRadius: '20px',
+                  textDecoration: 'none',
+                  color: '#166534',
+                  border: '1px solid #bbf7d0'
+                }}
+              >
+                <div style={{ background: '#25D366', color: 'white', padding: '0.875rem', borderRadius: '16px' }}>
+                  <MessageSquare size={28} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '0.125rem' }}>WhatsApp Group</h3>
+                  <p style={{ fontSize: '0.8125rem', opacity: 0.8 }}>Chat with us and the community</p>
                 </div>
                 <ChevronRight size={20} />
               </a>
