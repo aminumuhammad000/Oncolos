@@ -258,7 +258,12 @@ function App() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      setUser(data.data.user);
+      setUser(prev => {
+        const newUser = { ...data.data.user };
+        // Ensure withdrawalHistory persists if it was already in state
+        newUser.withdrawalHistory = [data.data.withdrawal, ...(prev?.withdrawalHistory || [])];
+        return newUser;
+      });
       setSuccessAlert({
         title: '✅ Withdrawal Successful!',
         message: `₦${amount.toLocaleString()} has been sent to your bank account. Please allow a few minutes for it to arrive.`
@@ -1913,22 +1918,33 @@ function App() {
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>All money in &amp; out of your wallet</p>
 
             {(() => {
-              const OUTFLOW_TYPES = ['Plan Purchase', 'Admin Deduction'];
+              const OUTFLOW_TYPES = ['Plan Purchase', 'Admin Deduction', 'Withdrawal'];
               const allEntries = [
                 ...(user?.earningsHistory || []).map(e => ({
                   ...e,
                   category: OUTFLOW_TYPES.includes(e.type) ? 'outflow' : 'inflow'
                 })),
-                ...(user?.withdrawalHistory || []).map(w => ({
-                  id: w._id,
-                  type: 'Withdrawal',
-                  amount: w.amount,
-                  plan: `${w.bank} • ${w.accountNumber}`,
-                  date: new Date(w.createdAt).toLocaleDateString(),
-                  rawDate: w.createdAt,
-                  status: w.status,
-                  category: 'outflow'
-                }))
+                ...(user?.withdrawalHistory || [])
+                  .filter(w => {
+                    // Avoid showing the same withdrawal if it's already in earningsHistory
+                    // We check if there's a Withdrawal entry in earningsHistory with same amount and close timestamp
+                    const alreadyInHistory = (user?.earningsHistory || []).some(e => 
+                      e.type === 'Withdrawal' && 
+                      e.amount === w.amount && 
+                      Math.abs(new Date(e.rawDate || e.date).getTime() - new Date(w.createdAt).getTime()) < 5000
+                    );
+                    return !alreadyInHistory;
+                  })
+                  .map(w => ({
+                    id: w._id,
+                    type: 'Withdrawal',
+                    amount: w.amount,
+                    plan: `${w.bank} • ${w.accountNumber}`,
+                    date: new Date(w.createdAt).toLocaleDateString(),
+                    rawDate: w.createdAt,
+                    status: w.status,
+                    category: 'outflow'
+                  }))
               ].sort((a, b) => {
                 const da = a.rawDate ? new Date(a.rawDate) : new Date(a.date);
                 const db = b.rawDate ? new Date(b.rawDate) : new Date(b.date);

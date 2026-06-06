@@ -215,6 +215,18 @@ exports.requestWithdrawal = async (req, res) => {
         user.balance -= amount;
         user.withdrawBalance -= amount;
         
+        // Push to earnings history for visibility in the Earning Page
+        const historyId = Date.now().toString();
+        user.earningsHistory.unshift({
+          id: historyId,
+          type: 'Withdrawal',
+          amount: amount,
+          plan: `${bank} • ${accountNumber}`,
+          date: new Date().toLocaleDateString(),
+          rawDate: new Date(),
+          status: 'Pending'
+        });
+
         // Save bank details for next time
         user.savedBankDetails = { bank, bankCode, accountNumber, accountName };
 
@@ -257,6 +269,11 @@ exports.requestWithdrawal = async (req, res) => {
             withdrawal.vtPayoutRef = payoutRef || null;
             await withdrawal.save();
 
+            // Update status in earnings history
+            const histEntry = user.earningsHistory.find(h => h.id === historyId);
+            if (histEntry) histEntry.status = 'Completed';
+            await user.save();
+
             console.log(`[Withdrawal] Auto-payout SUCCESS for user ${user.phone}. Ref: ${payoutRef}`);
 
             return res.status(201).json({
@@ -273,6 +290,11 @@ exports.requestWithdrawal = async (req, res) => {
 
             user.balance += amount;
             user.withdrawBalance += amount;
+            
+            // Update status in earnings history to Rejected or Refunded
+            const histEntry = user.earningsHistory.find(h => h.id === historyId);
+            if (histEntry) histEntry.status = 'Rejected';
+            
             await user.save();
 
             // Mark withdrawal as rejected with reason
