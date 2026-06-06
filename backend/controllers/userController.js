@@ -189,7 +189,7 @@ exports.requestWithdrawal = async (req, res) => {
         }
 
         const feeSetting = await Settings.findOne({ key: 'withdrawalFeePercent' });
-        const feePercent = feeSetting ? Number(feeSetting.value) : 12;
+        const feePercent = feeSetting ? Number(feeSetting.value) : 3;
         const percentFee = (amount * feePercent) / 100;
         // ₦35 processing fee per every ₦25,000 block (rounded up)
         const processingFee = Math.ceil(amount / 25000) * 35;

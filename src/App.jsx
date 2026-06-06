@@ -883,7 +883,7 @@ function App() {
             <div className="rule-chip"><CreditCard size={16} /> Min With: ₦600</div>
             <div className="rule-chip"><Clock size={16} /> Time: 10:30–4:30</div>
             <div className="rule-chip"><Gift size={16} /> Gift: 6pm</div>
-            <div className="rule-chip rule-chip--warning"><ArrowDownCircle size={16} /> Withdrawal Charge: 12%</div>
+            <div className="rule-chip rule-chip--warning"><ArrowDownCircle size={16} /> Withdrawal Charge: 3%</div>
             <div className="rule-chip rule-chip--referral"><Users size={16} /> Referral L1: 20%</div>
             <div className="rule-chip rule-chip--referral"><Users size={16} /> Referral L2: 2%</div>
             <div className="rule-chip rule-chip--referral"><Users size={16} /> Referral L3: 1%</div>
@@ -1862,7 +1862,7 @@ function App() {
                       Available: ₦{(user?.balance || 0).toLocaleString()}
                     </p>
                     <p style={{ fontSize: '0.75rem', color: 'var(--error)', fontWeight: '600' }}>
-                      Service Fee (12%): ₦{withdrawForm.amount ? (parseFloat(withdrawForm.amount) * (platformSettings.withdrawalFeePercent || 12) / 100).toLocaleString() : '0'}
+                      Service Fee (3%): ₦{withdrawForm.amount ? (parseFloat(withdrawForm.amount) * (platformSettings.withdrawalFeePercent || 3) / 100).toLocaleString() : '0'}
                     </p>
                     {withdrawForm.amount && parseFloat(withdrawForm.amount) > 0 && (
                       <p style={{ fontSize: '0.75rem', color: 'var(--text-main)', fontWeight: '600' }}>
@@ -1877,7 +1877,7 @@ function App() {
                     )}
                     {withdrawForm.amount && parseFloat(withdrawForm.amount) >= 600 && (() => {
                       const amt = parseFloat(withdrawForm.amount);
-                      const pctFee = amt * (platformSettings.withdrawalFeePercent || 12) / 100;
+                      const pctFee = amt * (platformSettings.withdrawalFeePercent || 3) / 100;
                       const procFee = Math.ceil(amt / 25000) * 35;
                       const receive = amt - pctFee - procFee;
                       return (

@@ -108,7 +108,7 @@ exports.getSettings = async (req, res) => {
       isWelcomeBonusEnabled: true,
       welcomeBonusAmount: 600,
       isWithdrawalEnabled: true,
-      withdrawalFeePercent: 12,
+      withdrawalFeePercent: 3,
       referralL1: 20,
       referralL2: 2,
       referralL3: 1
@@ -169,7 +169,7 @@ exports.updateWithdrawalStatus = async (req, res) => {
       try {
         const { initiatePayout } = require('../utils/vtstack');
         const payoutResult = await initiatePayout({
-          amount: withdrawal.amount - (withdrawal.serviceFee || (withdrawal.amount * 0.12)),
+          amount: withdrawal.amount - (withdrawal.serviceFee || (withdrawal.amount * 0.03)),
           bankCode: withdrawal.bankCode || '100004',
           accountNumber: withdrawal.accountNumber,
           accountName: withdrawal.accountName,
