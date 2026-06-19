@@ -22,7 +22,8 @@ exports.claimDailyBonus = async (req, res) => {
             }
         }
 
-        const bonus = 30;
+        const amountSetting = await Settings.findOne({ key: 'dailyBonusAmount' });
+        const bonus = amountSetting ? Number(amountSetting.value) : 30;
         user.balance += bonus;
         user.withdrawBalance += bonus;
         user.lastClaimed = new Date();
@@ -190,9 +191,19 @@ exports.requestWithdrawal = async (req, res) => {
 
         const feeSetting = await Settings.findOne({ key: 'withdrawalFeePercent' });
         const feePercent = feeSetting ? Number(feeSetting.value) : 3;
+
+        const fixedFeeSetting = await Settings.findOne({ key: 'processingFeeFixed' });
+        const processingFeeFixed = fixedFeeSetting ? Number(fixedFeeSetting.value) : 35;
+
+        const blockFeeSetting = await Settings.findOne({ key: 'processingFeeBlock' });
+        const processingFeeBlock = blockFeeSetting ? Number(blockFeeSetting.value) : 25000;
+
+        const minWithdrawSetting = await Settings.findOne({ key: 'minWithdrawalAmount' });
+        const minWithdrawalAmount = minWithdrawSetting ? Number(minWithdrawSetting.value) : 600;
+
         const percentFee = (amount * feePercent) / 100;
-        // ₦35 processing fee per every ₦25,000 block (rounded up)
-        const processingFee = Math.ceil(amount / 25000) * 35;
+        // Processing fee per every block (rounded up)
+        const processingFee = Math.ceil(amount / processingFeeBlock) * processingFeeFixed;
         const fee = percentFee + processingFee;
         const netAmount = amount - fee;
 
@@ -203,8 +214,8 @@ exports.requestWithdrawal = async (req, res) => {
             return res.status(400).json({ message: 'Insufficient balance' });
         }
 
-        if (amount < 600) {
-            return res.status(400).json({ message: 'Minimum withdrawal is ₦600' });
+        if (amount < minWithdrawalAmount) {
+            return res.status(400).json({ message: `Minimum withdrawal is ₦${minWithdrawalAmount}` });
         }
 
         // Must have at least one investment to activate withdrawals

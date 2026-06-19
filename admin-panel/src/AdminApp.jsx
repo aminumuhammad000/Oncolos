@@ -51,7 +51,18 @@ export default function AdminApp() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedInvestment, setSelectedInvestment] = useState(null);
-  const [platformSettings, setPlatformSettings] = useState({ isDailyBonusEnabled: true, isWelcomeBonusEnabled: true, welcomeBonusAmount: 600, isWithdrawalEnabled: true, withdrawalFeePercent: 3 });
+  const [platformSettings, setPlatformSettings] = useState({ 
+    isDailyBonusEnabled: true, 
+    dailyBonusAmount: 30,
+    isWelcomeBonusEnabled: true, 
+    welcomeBonusAmount: 600, 
+    isWithdrawalEnabled: true, 
+    withdrawalFeePercent: 3,
+    minWithdrawalAmount: 600,
+    minDepositAmount: 2500,
+    processingFeeFixed: 35,
+    processingFeeBlock: 25000
+  });
   const [gateway, setGateway] = useState({ provider: 'VTStack (Recommended)', mode: 'test', publicKey: '', payoutKey: '', webhookSecret: '' });
   const [emailSettings, setEmailSettings] = useState({ smtpEmail: '', appPassword: '' });
   const [withdrawals, setWithdrawals] = useState([]);
@@ -1026,6 +1037,18 @@ export default function AdminApp() {
                     />
                   </label>
 
+                  {platformSettings.isDailyBonusEnabled && (
+                    <div className="form-group" style={{marginTop:'1rem', paddingLeft: '2.5rem'}}>
+                      <label>Daily Bonus Amount (₦)</label>
+                      <input 
+                        type="number" 
+                        value={platformSettings.dailyBonusAmount || 30}
+                        onChange={(e) => setPlatformSettings({...platformSettings, dailyBonusAmount: Number(e.target.value)})}
+                        placeholder="30"
+                      />
+                    </div>
+                  )}
+
                   <label className="toggle-row" style={{marginTop:'1.5rem'}}>
                     <div style={{display:'flex', alignItems:'center', gap:'0.75rem'}}>
                        <Gift size={18} color={platformSettings.isWelcomeBonusEnabled ? '#16a34a' : '#64748b'} />
@@ -1070,14 +1093,63 @@ export default function AdminApp() {
                   </p>
 
                   <div className="form-group" style={{marginTop: '1.5rem', paddingLeft: '2.5rem'}}>
-                    <label>Withdrawal Fee (%)</label>
-                    <input 
-                      type="number" 
-                      value={platformSettings.withdrawalFeePercent || 3}
-                      onChange={(e) => setPlatformSettings({...platformSettings, withdrawalFeePercent: Number(e.target.value)})}
-                      placeholder="3"
-                    />
-                    <p className="muted" style={{fontSize: '0.7rem', marginTop: '0.25rem'}}>Percentage charged per withdrawal transaction.</p>
+                    <div style={{display:'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem'}}>
+                      <div>
+                        <label>Min. Deposit (₦)</label>
+                        <input 
+                          type="number" 
+                          value={platformSettings.minDepositAmount || 2500}
+                          onChange={(e) => setPlatformSettings({...platformSettings, minDepositAmount: Number(e.target.value)})}
+                          placeholder="2500"
+                        />
+                      </div>
+                      <div>
+                        <label>Min. Withdraw (₦)</label>
+                        <input 
+                          type="number" 
+                          value={platformSettings.minWithdrawalAmount || 600}
+                          onChange={(e) => setPlatformSettings({...platformSettings, minWithdrawalAmount: Number(e.target.value)})}
+                          placeholder="600"
+                        />
+                      </div>
+                      <div>
+                        <label>Service Fee (%)</label>
+                        <input 
+                          type="number" 
+                          value={platformSettings.withdrawalFeePercent || 3}
+                          onChange={(e) => setPlatformSettings({...platformSettings, withdrawalFeePercent: Number(e.target.value)})}
+                          placeholder="3"
+                        />
+                      </div>
+                    </div>
+                    <p className="muted" style={{fontSize: '0.7rem', marginTop: '0.25rem'}}>Thresholds for deposit/withdrawal and our platform service percentage fee.</p>
+                  </div>
+
+                  <div className="form-group" style={{marginTop: '1rem', paddingLeft: '2.5rem'}}>
+                    <label>Gateway Entry Fee (System Cost)</label>
+                    <div style={{display:'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem'}}>
+                      <div>
+                        <span style={{fontSize:'0.7rem', color:'#64748b'}}>Fee per block (₦)</span>
+                        <input 
+                          type="number" 
+                          value={platformSettings.processingFeeFixed || 35}
+                          onChange={(e) => setPlatformSettings({...platformSettings, processingFeeFixed: Number(e.target.value)})}
+                          placeholder="35"
+                        />
+                      </div>
+                      <div>
+                        <span style={{fontSize:'0.7rem', color:'#64748b'}}>Block Size (₦)</span>
+                        <input 
+                          type="number" 
+                          value={platformSettings.processingFeeBlock || 25000}
+                          onChange={(e) => setPlatformSettings({...platformSettings, processingFeeBlock: Number(e.target.value)})}
+                          placeholder="25000"
+                        />
+                      </div>
+                    </div>
+                    <p className="muted" style={{fontSize: '0.7rem', marginTop: '0.5rem'}}>
+                      The gateway fee model. Default is ₦35 per ₦25,000 withdrawn.
+                    </p>
                   </div>
 
                   <hr style={{margin: '1.5rem 0', border: 'none', borderTop: '1px solid #eee'}} />
