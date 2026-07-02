@@ -57,7 +57,7 @@ export default function AdminApp() {
     isWelcomeBonusEnabled: true, 
     welcomeBonusAmount: 600, 
     isWithdrawalEnabled: true, 
-    withdrawalFeePercent: 3,
+    withdrawalFeePercent: 0,
     minWithdrawalAmount: 600,
     minDepositAmount: 2500,
     processingFeeFixed: 35,
@@ -1113,16 +1113,16 @@ export default function AdminApp() {
                         />
                       </div>
                       <div>
-                        <label>Service Fee (%)</label>
+                        <label>Service Fee (%) — Free (0%)</label>
                         <input 
                           type="number" 
-                          value={platformSettings.withdrawalFeePercent || 3}
+                          value={platformSettings.withdrawalFeePercent ?? 0}
                           onChange={(e) => setPlatformSettings({...platformSettings, withdrawalFeePercent: Number(e.target.value)})}
-                          placeholder="3"
+                          placeholder="0"
                         />
                       </div>
                     </div>
-                    <p className="muted" style={{fontSize: '0.7rem', marginTop: '0.25rem'}}>Thresholds for deposit/withdrawal and our platform service percentage fee.</p>
+                    <p className="muted" style={{fontSize: '0.7rem', marginTop: '0.25rem'}}>Withdrawal fee is currently FREE (0%) — users receive 100% of their requested amount.</p>
                   </div>
 
                   <div className="form-group" style={{marginTop: '1rem', paddingLeft: '2.5rem'}}>

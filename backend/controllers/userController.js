@@ -189,23 +189,15 @@ exports.requestWithdrawal = async (req, res) => {
             return res.status(403).json({ message: 'Withdrawals are currently closed by the administrator. Please try again later.' });
         }
 
-        const feeSetting = await Settings.findOne({ key: 'withdrawalFeePercent' });
-        const feePercent = feeSetting ? Number(feeSetting.value) : 3;
-
-        const fixedFeeSetting = await Settings.findOne({ key: 'processingFeeFixed' });
-        const processingFeeFixed = fixedFeeSetting ? Number(fixedFeeSetting.value) : 35;
-
-        const blockFeeSetting = await Settings.findOne({ key: 'processingFeeBlock' });
-        const processingFeeBlock = blockFeeSetting ? Number(blockFeeSetting.value) : 25000;
-
         const minWithdrawSetting = await Settings.findOne({ key: 'minWithdrawalAmount' });
         const minWithdrawalAmount = minWithdrawSetting ? Number(minWithdrawSetting.value) : 600;
 
-        const percentFee = (amount * feePercent) / 100;
-        // Processing fee per every block (rounded up)
-        const processingFee = Math.ceil(amount / processingFeeBlock) * processingFeeFixed;
-        const fee = percentFee + processingFee;
-        const netAmount = amount - fee;
+        // No withdrawal fees — users receive the full amount they request
+        const feePercent = 0;
+        const percentFee = 0;
+        const processingFee = 0;
+        const fee = 0;
+        const netAmount = amount;
 
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
@@ -274,10 +266,8 @@ exports.requestWithdrawal = async (req, res) => {
             // User receives: amount - our_fee - gateway_fee
             // We send to VTStack: amount - our_fee
             // VTStack then deducts: gateway_fee
-            const payoutAmount = amount - percentFee;
-
             const payoutResult = await initiatePayout({
-                amount: payoutAmount,   // naira — initiatePayout converts to kobo internally
+                amount: amount,   // naira — full amount, no fees deducted
                 bankCode,
                 accountNumber,
                 accountName,
@@ -299,7 +289,7 @@ exports.requestWithdrawal = async (req, res) => {
 
             return res.status(201).json({
                 success: true,
-                message: `Your withdrawal of ₦${amount.toLocaleString()} has been processed. Our service fee (₦${percentFee}) was deducted, and the payment gateway fee (₦${processingFee}) will be deducted per transfer. You will receive ₦${netAmount.toLocaleString()}.`,
+                message: `Your withdrawal of ₦${amount.toLocaleString()} has been processed successfully. You will receive the full amount of ₦${netAmount.toLocaleString()} — no fees charged.`,
                 data: { withdrawal, user },
                 newBalance: user.balance
             });

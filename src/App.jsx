@@ -11,7 +11,7 @@ function App() {
   const [platformSettings, setPlatformSettings] = useState({ 
     isWithdrawalEnabled: true, 
     welcomeBonusAmount: 600,
-    withdrawalFeePercent: 3,
+    withdrawalFeePercent: 0,
     processingFeeFixed: 35,
     processingFeeBlock: 25000,
     minWithdrawalAmount: 600,
@@ -892,7 +892,7 @@ function App() {
             <div className="rule-chip"><CreditCard size={16} /> Min With: ₦{platformSettings.minWithdrawalAmount || 600}</div>
             <div className="rule-chip"><Clock size={16} /> Time: 10:30–4:30</div>
             <div className="rule-chip"><Gift size={16} /> Gift: 6pm</div>
-            <div className="rule-chip rule-chip--warning"><ArrowDownCircle size={16} /> Withdrawal Charge: {platformSettings.withdrawalFeePercent || 3}%</div>
+            <div className="rule-chip rule-chip--green" style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}><ArrowDownCircle size={16} /> Withdrawal Fee: Free</div>
             <div className="rule-chip rule-chip--referral"><Users size={16} /> Referral L1: {platformSettings.referralL1 || 20}%</div>
             <div className="rule-chip rule-chip--referral"><Users size={16} /> Referral L2: {platformSettings.referralL2 || 2}%</div>
             <div className="rule-chip rule-chip--referral"><Users size={16} /> Referral L3: {platformSettings.referralL3 || 1}%</div>
@@ -1870,31 +1870,19 @@ function App() {
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       Available: ₦{(user?.balance || 0).toLocaleString()}
                     </p>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--error)', fontWeight: '600' }}>
-                      Service Fee ({platformSettings.withdrawalFeePercent || 3}%): ₦{withdrawForm.amount ? (parseFloat(withdrawForm.amount) * (platformSettings.withdrawalFeePercent || 3) / 100).toLocaleString() : '0'}
+                    <p style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: '600' }}>
+                      🎉 No withdrawal fees — you keep 100% of your money!
                     </p>
-                    {withdrawForm.amount && parseFloat(withdrawForm.amount) > 0 && (
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-main)', fontWeight: '600' }}>
-                        Gateway Transaction Fee: ₦{(Math.ceil(parseFloat(withdrawForm.amount) / (platformSettings.processingFeeBlock || 25000)) * (platformSettings.processingFeeFixed || 35)).toLocaleString()}
-                        <span style={{ fontWeight: '400', fontSize: '0.7rem', display: 'block', color: 'var(--text-muted)' }}> (Charged by the payment gateway, not by us)</span>
-                      </p>
-                    )}
                     {withdrawForm.amount && parseFloat(withdrawForm.amount) > 0 && parseFloat(withdrawForm.amount) < (platformSettings.minWithdrawalAmount || 600) && (
                       <p style={{ fontSize: '0.8125rem', color: '#dc2626', fontWeight: '700', padding: '0.5rem', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '8px' }}>
                         Minimum withdrawal is ₦{platformSettings.minWithdrawalAmount || 600}. Please enter a higher amount.
                       </p>
                     )}
-                    {withdrawForm.amount && parseFloat(withdrawForm.amount) >= (platformSettings.minWithdrawalAmount || 600) && (() => {
-                      const amt = parseFloat(withdrawForm.amount);
-                      const pctFee = amt * (platformSettings.withdrawalFeePercent || 3) / 100;
-                      const procFee = Math.ceil(amt / (platformSettings.processingFeeBlock || 25000)) * (platformSettings.processingFeeFixed || 35);
-                      const receive = amt - pctFee - procFee;
-                      return (
-                        <p style={{ fontSize: '0.8125rem', color: 'var(--primary)', fontWeight: '700', padding: '0.5rem', background: 'rgba(37, 99, 235, 0.05)', borderRadius: '8px' }}>
-                          You will receive: ₦{receive.toLocaleString()}
-                        </p>
-                      );
-                    })()}
+                    {withdrawForm.amount && parseFloat(withdrawForm.amount) >= (platformSettings.minWithdrawalAmount || 600) && (
+                      <p style={{ fontSize: '0.8125rem', color: 'var(--primary)', fontWeight: '700', padding: '0.5rem', background: 'rgba(37, 99, 235, 0.05)', borderRadius: '8px' }}>
+                        You will receive: ₦{parseFloat(withdrawForm.amount).toLocaleString()} <span style={{ fontWeight: '400', fontSize: '0.7rem', color: '#16a34a' }}>No fees!</span>
+                      </p>
+                    )}
                   </div>
                 </div>
 

@@ -109,7 +109,7 @@ exports.getSettings = async (req, res) => {
       isWelcomeBonusEnabled: true,
       welcomeBonusAmount: 600,
       isWithdrawalEnabled: true,
-      withdrawalFeePercent: 3,
+      withdrawalFeePercent: 0,
       minWithdrawalAmount: 600,
       minDepositAmount: 2500,
       processingFeeFixed: 35,
@@ -174,15 +174,11 @@ exports.updateWithdrawalStatus = async (req, res) => {
       try {
         const { initiatePayout } = require('../utils/vtstack');
         
-        let serviceFee = withdrawal.serviceFee;
-        if (serviceFee === undefined || serviceFee === null) {
-          const feeSetting = await Settings.findOne({ key: 'withdrawalFeePercent' });
-          const feePercent = feeSetting ? Number(feeSetting.value) : 3;
-          serviceFee = (withdrawal.amount * feePercent) / 100;
-        }
+        // No withdrawal fees — full amount is paid out
+        const serviceFee = 0;
 
         const payoutResult = await initiatePayout({
-          amount: withdrawal.amount - serviceFee,
+          amount: withdrawal.amount,
           bankCode: withdrawal.bankCode || '100004',
           accountNumber: withdrawal.accountNumber,
           accountName: withdrawal.accountName,
