@@ -20,13 +20,18 @@ const {
   updatePromotion,
   deletePromotion,
   loginAsUser,
-  changeUserPassword
+  changeUserPassword,
+  getAllPlans,
+  createPlan,
+  updatePlan,
+  deletePlan
 } = require('../controllers/adminController');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
 const router = express.Router();
 
 router.get('/settings/public', getSettings);
 router.get('/promotions/public', getAllPromotions); // public — no auth needed
+router.get('/plans/public', getAllPlans); // public — no auth needed
 
 router.use(protect);
 router.use(isAdmin);
@@ -56,5 +61,11 @@ router.get('/promotions', getAllPromotions);
 router.post('/promotions', createPromotion);
 router.put('/promotions/:id', updatePromotion);
 router.delete('/promotions/:id', deletePromotion);
+
+// Plans
+router.get('/plans', getAllPlans);
+router.post('/plans', createPlan);
+router.put('/plans/:id', updatePlan);
+router.delete('/plans/:id', deletePlan);
 
 module.exports = router;

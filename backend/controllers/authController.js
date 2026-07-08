@@ -108,7 +108,8 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { password } = req.body;
-    const identifier = req.body.phone || req.body.email || req.body.identifier;
+    let identifier = req.body.phone || req.body.email || req.body.identifier;
+    if (identifier) identifier = identifier.trim();
 
     if (!identifier || !password) {
       return res.status(400).json({ message: 'Please provide phone/email and password' });

@@ -384,4 +384,44 @@ exports.deletePromotion = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+// Plan Management
+const Plan = require('../models/Plan');
 
+exports.getAllPlans = async (req, res) => {
+  try {
+    const plans = await Plan.find().sort({ price: 1 });
+    res.status(200).json({ success: true, data: plans });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.createPlan = async (req, res) => {
+  try {
+    const plan = await Plan.create(req.body);
+    res.status(201).json({ success: true, data: plan });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.updatePlan = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const plan = await Plan.findByIdAndUpdate(id, req.body, { new: true });
+    if (!plan) return res.status(404).json({ message: 'Plan not found' });
+    res.status(200).json({ success: true, data: plan });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.deletePlan = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Plan.findByIdAndDelete(id);
+    res.status(200).json({ success: true, message: 'Plan deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

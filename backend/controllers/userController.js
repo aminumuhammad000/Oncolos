@@ -143,22 +143,16 @@ exports.verifyBankAccount = async (req, res) => {
         const errorMsg = err.response?.status ? `VTStack API Error ${err.response.status}` : err.message;
         console.warn('Verify Account Warning:', errorMsg);
 
-        // Check if it's a 502/504/Timeout (Service Down)
-        const isDown = err.response?.status >= 500 || err.code === 'ECONNABORTED' || err.message.includes('timeout');
-
-        if (isDown) {
-            return res.status(200).json({
-                success: true,
-                data: {
-                    accountName: 'SERVICE_UNAVAILABLE',
-                    accountNumber: accountNumber,
-                    bankName: ''
-                },
-                message: 'Service is currently slow. Please enter your name manually.'
-            });
-        }
-
-        res.status(400).json({ message: err.response?.data?.message || 'Account verification failed. Please check the account number and bank.' });
+        // Always fallback on any error so the user isn't blocked from withdrawing
+        return res.status(200).json({
+            success: true,
+            data: {
+                accountName: 'SERVICE_UNAVAILABLE',
+                accountNumber: accountNumber,
+                bankName: ''
+            },
+            message: 'Service is currently slow. Please enter your name manually.'
+        });
     }
 };
 

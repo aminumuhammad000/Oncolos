@@ -59,7 +59,7 @@ export default function AdminApp() {
     isWithdrawalEnabled: true, 
     withdrawalFeePercent: 0,
     minWithdrawalAmount: 600,
-    minDepositAmount: 2500,
+    minDepositAmount: 6000,
     processingFeeFixed: 35,
     processingFeeBlock: 25000
   });
@@ -79,6 +79,9 @@ export default function AdminApp() {
   const [users, setUsers] = useState([]);
   const [vipUsers, setVipUsers] = useState([]);
   const [promotions, setPromotions] = useState([]);
+  const [plans, setPlans] = useState([]);
+  const [planModal, setPlanModal] = useState(null);
+  const [planForm, setPlanForm] = useState({ price: '', daily: '', isActive: true });
   const [investments, setInvestments] = useState([]);
   const [referrals, setReferrals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -186,6 +189,13 @@ export default function AdminApp() {
         const data = await safeJson(res);
         if (data.success) setPromotions(data.data);
       }
+      if (section === 'packages') {
+        const res = await fetch(`${API_BASE}/plans`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await safeJson(res);
+        if (data.success) setPlans(data.data);
+      }
     } catch (err) {
       console.error('Fetch error:', err);
     } finally {
@@ -234,6 +244,28 @@ export default function AdminApp() {
     } catch (err) {
       console.error('Promo action failed:', err);
       alert('Error updating promotion');
+    }
+  };
+
+  const handlePlanAction = async (method, id = null, body = null) => {
+    try {
+      const url = id ? `${API_BASE}/plans/${id}` : `${API_BASE}/plans`;
+      const res = await fetch(url, {
+        method,
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('oncolos_admin_token')}`
+        },
+        body: body ? JSON.stringify(body) : null
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchData(); // Refresh plans
+        if (method !== 'GET') alert('Package updated successfully!');
+      }
+    } catch (err) {
+      console.error('Plan action failed:', err);
+      alert('Error updating package');
     }
   };
 
@@ -389,6 +421,7 @@ export default function AdminApp() {
     { id: 'vip',         label: 'VIP Section',   icon: Crown },
     { id: 'promo',       label: 'Promotions',    icon: Megaphone },
     { id: 'referrals',   label: 'Referrals',     icon: ChevronRight },
+    { id: 'packages',    label: 'Packages',      icon: Gift },
     { id: 'settings',    label: 'Platform Settings', icon: Settings },
   ];
 
@@ -396,11 +429,13 @@ export default function AdminApp() {
     e.preventDefault();
     setAuthLoading(true);
     setAuthError('');
-    const email = e.target.email.value;
-    const password = e.target.password.value;
+    const email = e.target.email.value.trim();
+    const password = e.target.password.value.trim();
 
     try {
-      const res = await fetch('https://api.oncolos.com.ng/api/auth/login', {
+      const authUrl = API_BASE.replace('/admin', '/auth/login');
+      console.log('Sending admin login request to:', authUrl);
+      const res = await fetch(authUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -1098,9 +1133,9 @@ export default function AdminApp() {
                         <label>Min. Deposit (₦)</label>
                         <input 
                           type="number" 
-                          value={platformSettings.minDepositAmount || 2500}
+                          value={platformSettings.minDepositAmount || 6000}
                           onChange={(e) => setPlatformSettings({...platformSettings, minDepositAmount: Number(e.target.value)})}
-                          placeholder="2500"
+                          placeholder="6000"
                         />
                       </div>
                       <div>
@@ -1213,6 +1248,51 @@ export default function AdminApp() {
                             </td>
                           </tr>
                         ))}
+                      </tbody>
+                    </table>
+                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Packages Section ── */}
+          {section === 'packages' && (
+            <div>
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: '2rem'}}>
+                <h1 className="page-title" style={{margin:0}}>Package Management</h1>
+                <button className="admin-btn-primary" onClick={() => { setPlanForm({ price: '', daily: '', duration: 60, isActive: true }); setPlanModal('new'); }}>+ New Package</button>
+              </div>
+              
+              <div className="admin-card">
+                 <div className="table-responsive">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                           <th>Price (₦)</th>
+                           <th>Daily Return (₦)</th>
+                           <th>Duration (Days)</th>
+                           <th>Status</th>
+                           <th style={{textAlign:'right'}}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {plans.map(p => (
+                           <tr key={p._id}>
+                             <td className="fw600">₦{p.price?.toLocaleString()}</td>
+                             <td>₦{p.daily?.toLocaleString()}</td>
+                             <td>{p.duration || 60}</td>
+                             <td>
+                               <Badge status={p.isActive ? 'Active' : 'Banned'} />
+                             </td>
+                             <td>
+                               <div style={{display:'flex', gap:'0.5rem', justifyContent:'flex-end'}}>
+                                  <button className="action-btn approve" onClick={() => { setPlanForm(p); setPlanModal(p._id); }}>✎</button>
+                                  <button className="action-btn reject" onClick={() => { if(window.confirm('Delete package?')) handlePlanAction('DELETE', p._id); }}><Trash2 size={14}/></button>
+                               </div>
+                             </td>
+                           </tr>
+                        ))}
+                        {plans.length === 0 && <tr><td colSpan="5" style={{textAlign:'center', padding:'2rem'}} className="muted">No packages found.</td></tr>}
                       </tbody>
                     </table>
                  </div>
@@ -1402,6 +1482,43 @@ export default function AdminApp() {
       )}
 
       {/* ── Promotion Modal ── */}
+      {/* ── Package Modal ── */}
+      {planModal && (
+        <div className="admin-modal-overlay" onClick={() => setPlanModal(null)}>
+          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{planModal === 'new' ? 'Create Package' : 'Edit Package'}</h2>
+              <button className="mobile-close-btn" onClick={() => setPlanModal(null)}>×</button>
+            </div>
+            <div className="modal-body">
+               <div className="form-group">
+                 <label>Price (₦)</label>
+                 <input type="number" value={planForm.price} onChange={e => setPlanForm({...planForm, price: e.target.value})} placeholder="e.g. 6000" />
+               </div>
+               <div className="form-group">
+                 <label>Daily Return (₦)</label>
+                 <input type="number" value={planForm.daily} onChange={e => setPlanForm({...planForm, daily: e.target.value})} placeholder="e.g. 1000" />
+               </div>
+               <div className="form-group">
+                 <label>Duration (Days)</label>
+                 <input type="number" value={planForm.duration} onChange={e => setPlanForm({...planForm, duration: e.target.value})} placeholder="e.g. 60" />
+               </div>
+               <div className="form-group" style={{display:'flex', gap:'0.5rem', alignItems:'center'}}>
+                 <input type="checkbox" id="planActive" checked={planForm.isActive} onChange={e => setPlanForm({...planForm, isActive: e.target.checked})} style={{width:'auto'}} />
+                 <label htmlFor="planActive" style={{margin:0}}>Active (Available to users)</label>
+               </div>
+               <div style={{marginTop:'1.5rem', display:'flex', gap:'1rem'}}>
+                  <button className="admin-btn-secondary" onClick={() => setPlanModal(null)}>Cancel</button>
+                  <button className="admin-btn-primary" onClick={() => {
+                     handlePlanAction(planModal === 'new' ? 'POST' : 'PUT', planModal === 'new' ? null : planModal, planForm);
+                     setPlanModal(null);
+                  }}>Save Package</button>
+               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {promoModal && (
         <div className="admin-modal-overlay" onClick={() => setPromoModal(null)}>
           <div className="admin-modal" onClick={e => e.stopPropagation()} style={{maxWidth: '650px'}}>

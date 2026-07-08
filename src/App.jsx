@@ -15,16 +15,17 @@ function App() {
     processingFeeFixed: 35,
     processingFeeBlock: 25000,
     minWithdrawalAmount: 600,
-    minDepositAmount: 2500
+    minDepositAmount: 6000
   });
   const [loading, setLoading] = useState(true);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [promotions, setPromotions] = useState([]);
+  const [plans, setPlans] = useState([]);
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch(`https://api.oncolos.com.ng/api/admin/settings/public`);
+        const res = await fetch(`${API_URL}/admin/settings/public`);
         const data = await res.json();
         if (res.ok && data.success) setPlatformSettings(data.data);
       } catch (err) {
@@ -33,7 +34,7 @@ function App() {
     };
     const fetchPromos = async () => {
       try {
-        const res = await fetch(`https://api.oncolos.com.ng/api/admin/promotions/public`);
+        const res = await fetch(`${API_URL}/admin/promotions/public`);
         if (res.ok) {
           const data = await res.json();
           if (data.success) setPromotions(data.data.filter(p => p.isActive));
@@ -42,8 +43,20 @@ function App() {
         console.error('Failed to fetch promotions');
       }
     };
+    const fetchPlans = async () => {
+      try {
+        const res = await fetch(`${API_URL}/admin/plans/public`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) setPlans(data.data.filter(p => p.isActive !== false));
+        }
+      } catch (err) {
+        console.error('Failed to fetch plans');
+      }
+    };
     fetchSettings();
     fetchPromos();
+    fetchPlans();
   }, []);
   const [authError, setAuthError] = useState('');
   const [resetEmail, setResetEmail] = useState('');
@@ -57,7 +70,7 @@ function App() {
   const [errorAlert, setErrorAlert] = useState(null);
   const [urlReferralCode, setUrlReferralCode] = useState('');
   const [realBanks, setRealBanks] = useState([]);
-  const [rechargeAmount, setRechargeAmount] = useState(2500);
+  const [rechargeAmount, setRechargeAmount] = useState(6000);
   const [rechargeStep, setRechargeStep] = useState('select'); // 'select' or 'pay'
   const [redeemCode, setRedeemCode] = useState('');
   const [redeemLoading, setRedeemLoading] = useState(false);
@@ -285,17 +298,7 @@ function App() {
     }
   };
 
-  const plans = [
-    { price: 2500, daily: 500 },
-    { price: 6000, daily: 1000 },
-    { price: 12000, daily: 2000 },
-    { price: 24000, daily: 4000 },
-    { price: 45000, daily: 8000 },
-    { price: 90000, daily: 15000 },
-    { price: 150000, daily: 25000 },
-    { price: 246000, daily: 41000 },
-    { price: 300000, daily: 50000 },
-  ];
+  // Dynamic plans fetched from the backend (state defined at the top)
 
 
 
@@ -396,7 +399,7 @@ function App() {
       // Always re-fetch settings when opening withdraw so admin changes are live
       const fetchSettings = async () => {
         try {
-          const res = await fetch(`https://api.oncolos.com.ng/api/admin/settings/public`);
+          const res = await fetch(`${API_URL}/admin/settings/public`);
           const data = await res.json();
           if (res.ok && data.success) setPlatformSettings(data.data);
         } catch (err) {
@@ -704,7 +707,8 @@ function App() {
           {/* Welcome Modal Popup */}
           {showWelcomeModal && (
             <div className="modal-overlay" style={{ background: 'rgba(0,0,0,0.7)', zIndex: 2000 }}>
-              <div className="glass-card fade-in" style={{ maxWidth: '340px', padding: '2rem', textAlign: 'center', background: 'white', color: 'var(--text-main)' }}>
+              <div className="glass-card fade-in" style={{ maxWidth: '340px', padding: '2rem', textAlign: 'center', background: 'white', color: 'var(--text-main)', position: 'relative' }}>
+                <button onClick={() => setShowWelcomeModal(false)} style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background='rgba(0,0,0,0.07)'} onMouseOut={e => e.currentTarget.style.background='none'} aria-label="Close"><X size={20} /></button>
                 <div style={{ width: '70px', height: '70px', background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '2rem' }}>
                   🎁
                 </div>
@@ -888,7 +892,7 @@ function App() {
 
 
           <div className="rules-container">
-            <div className="rule-chip"><Wallet size={16} /> Min Dep: ₦{(platformSettings.minDepositAmount || 2500).toLocaleString()}</div>
+
             <div className="rule-chip"><CreditCard size={16} /> Min With: ₦{platformSettings.minWithdrawalAmount || 600}</div>
             <div className="rule-chip"><Clock size={16} /> Time: 10:30–4:30</div>
             <div className="rule-chip"><Gift size={16} /> Gift: 6pm</div>

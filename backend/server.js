@@ -11,7 +11,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const userRoutes = require('./routes/userRoutes');
 const investmentRoutes = require('./routes/investmentRoutes');
 const { startInvestmentCron } = require('./jobs/investmentCron');
-const { ensureAdminExists } = require('./utils/adminInit');
+const { ensureAdminExists, ensureDefaultPlans } = require('./utils/adminInit');
 
 const app = express();
 
@@ -46,6 +46,7 @@ mongoose.connect(MONGO_URI)
   .then(async () => {
     console.log('MongoDB Connected...');
     await ensureAdminExists();
+    await ensureDefaultPlans();
     startInvestmentCron();
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })

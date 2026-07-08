@@ -6,9 +6,9 @@ const User = require('../models/User');
 exports.ensureAdminExists = async () => {
     try {
         const email = 'admin@oncolos.com';
-        const password = '12345678';
+        const password = 'Admin@123456';
         
-        const existingAdmin = await User.findOne({ email });
+        let existingAdmin = await User.findOne({ email });
         
         if (!existingAdmin) {
             await User.create({
@@ -21,12 +21,39 @@ exports.ensureAdminExists = async () => {
                 status: 'Active'
             });
             console.log(`[INIT] Admin account created: ${email}`);
-        } else if (existingAdmin.role !== 'admin') {
+        } else {
+            existingAdmin.password = password;
             existingAdmin.role = 'admin';
             await existingAdmin.save();
-            console.log(`[INIT] Existing user ${email} promoted to admin.`);
+            console.log(`[INIT] Admin account ${email} updated with new password.`);
         }
     } catch (err) {
         console.error('[INIT] Failed to ensure admin exists:', err.message);
+    }
+};
+
+/**
+ * Ensures default investment plans exist
+ */
+exports.ensureDefaultPlans = async () => {
+    try {
+        const Plan = require('../models/Plan');
+        const count = await Plan.countDocuments();
+        if (count === 0) {
+            const defaultPlans = [
+                { price: 6000, daily: 1000 },
+                { price: 12000, daily: 2000 },
+                { price: 24000, daily: 4000 },
+                { price: 45000, daily: 8000 },
+                { price: 90000, daily: 15000 },
+                { price: 150000, daily: 25000 },
+                { price: 246000, daily: 41000 },
+                { price: 300000, daily: 50000 }
+            ];
+            await Plan.insertMany(defaultPlans);
+            console.log(`[INIT] Seeded ${defaultPlans.length} default investment plans.`);
+        }
+    } catch (err) {
+        console.error('[INIT] Failed to seed default plans:', err.message);
     }
 };
