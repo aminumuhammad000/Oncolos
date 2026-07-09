@@ -386,6 +386,7 @@ exports.deletePromotion = async (req, res) => {
 };
 // Plan Management
 const Plan = require('../models/Plan');
+const { normalizePlanPayload } = require('../utils/planUtils');
 
 exports.getAllPlans = async (req, res) => {
   try {
@@ -398,7 +399,7 @@ exports.getAllPlans = async (req, res) => {
 
 exports.createPlan = async (req, res) => {
   try {
-    const plan = await Plan.create(req.body);
+    const plan = await Plan.create(normalizePlanPayload(req.body));
     res.status(201).json({ success: true, data: plan });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -408,7 +409,7 @@ exports.createPlan = async (req, res) => {
 exports.updatePlan = async (req, res) => {
   try {
     const { id } = req.params;
-    const plan = await Plan.findByIdAndUpdate(id, req.body, { new: true });
+    const plan = await Plan.findByIdAndUpdate(id, normalizePlanPayload(req.body), { new: true });
     if (!plan) return res.status(404).json({ message: 'Plan not found' });
     res.status(200).json({ success: true, data: plan });
   } catch (err) {

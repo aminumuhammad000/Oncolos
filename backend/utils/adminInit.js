@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const { buildDefaultPlans } = require('./planUtils');
 
 /**
  * Ensures a default admin exists on server startup
@@ -40,16 +41,7 @@ exports.ensureDefaultPlans = async () => {
         const Plan = require('../models/Plan');
         const count = await Plan.countDocuments();
         if (count === 0) {
-            const defaultPlans = [
-                { price: 6000, daily: 1000 },
-                { price: 12000, daily: 2000 },
-                { price: 24000, daily: 4000 },
-                { price: 45000, daily: 8000 },
-                { price: 90000, daily: 15000 },
-                { price: 150000, daily: 25000 },
-                { price: 246000, daily: 41000 },
-                { price: 300000, daily: 50000 }
-            ];
+            const defaultPlans = buildDefaultPlans();
             await Plan.insertMany(defaultPlans);
             console.log(`[INIT] Seeded ${defaultPlans.length} default investment plans.`);
         }
