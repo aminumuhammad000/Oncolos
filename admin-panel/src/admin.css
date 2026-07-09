@@ -546,6 +546,93 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
   margin-top: 1rem;
 }
 
+.package-form-card {
+  background: linear-gradient(135deg, #f8fbff 0%, #ffffff 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 1.25rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.package-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.package-form-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 0.35rem;
+}
+
+.package-form-header h3 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.package-badge {
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.package-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.package-form-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.package-form-inline input {
+  width: auto;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.package-form-inline label {
+  margin: 0;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.95rem;
+}
+
+.package-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.package-form-footer .admin-btn-secondary,
+.package-form-footer .admin-btn-primary {
+  width: auto;
+  min-width: 120px;
+}
+
 .admin-btn-secondary {
   padding: 0.875rem;
   background: #f1f5f9;
@@ -555,6 +642,21 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
   font-family: inherit;
   font-weight: 700;
   cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .package-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .package-form-footer {
+    flex-direction: column-reverse;
+  }
+
+  .package-form-footer .admin-btn-secondary,
+  .package-form-footer .admin-btn-primary {
+    width: 100%;
+  }
 }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

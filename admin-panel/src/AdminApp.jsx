@@ -1485,35 +1485,50 @@ export default function AdminApp() {
       {/* ── Package Modal ── */}
       {planModal && (
         <div className="admin-modal-overlay" onClick={() => setPlanModal(null)}>
-          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+          <div className="admin-modal" style={{maxWidth: '540px'}} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{planModal === 'new' ? 'Create Package' : 'Edit Package'}</h2>
               <button className="mobile-close-btn" onClick={() => setPlanModal(null)}>×</button>
             </div>
-            <div className="modal-body">
-               <div className="form-group">
-                 <label>Price (₦)</label>
-                 <input type="number" value={planForm.price} onChange={e => setPlanForm({...planForm, price: e.target.value})} placeholder="e.g. 6000" />
-               </div>
-               <div className="form-group">
-                 <label>Daily Return (₦)</label>
-                 <input type="number" value={planForm.daily} onChange={e => setPlanForm({...planForm, daily: e.target.value})} placeholder="e.g. 1000" />
-               </div>
-               <div className="form-group">
-                 <label>Duration (Days)</label>
-                 <input type="number" value={planForm.duration} onChange={e => setPlanForm({...planForm, duration: e.target.value})} placeholder="e.g. 60" />
-               </div>
-               <div className="form-group" style={{display:'flex', gap:'0.5rem', alignItems:'center'}}>
-                 <input type="checkbox" id="planActive" checked={planForm.isActive} onChange={e => setPlanForm({...planForm, isActive: e.target.checked})} style={{width:'auto'}} />
-                 <label htmlFor="planActive" style={{margin:0}}>Active (Available to users)</label>
-               </div>
-               <div style={{marginTop:'1.5rem', display:'flex', gap:'1rem'}}>
+            <div className="modal-body-content">
+              <div className="package-form-card">
+                <div className="package-form-header">
+                  <div>
+                    <p className="package-form-eyebrow">Investment package</p>
+                    <h3>{planModal === 'new' ? 'Set up a new package' : 'Update package details'}</h3>
+                  </div>
+                  <span className="package-badge">Live</span>
+                </div>
+
+                <div className="package-form-grid">
+                  <div className="form-group">
+                    <label>Price (₦)</label>
+                    <input type="number" value={planForm.price} onChange={e => setPlanForm({...planForm, price: e.target.value})} placeholder="e.g. 6000" />
+                  </div>
+                  <div className="form-group">
+                    <label>Daily Return (₦)</label>
+                    <input type="number" value={planForm.daily} onChange={e => setPlanForm({...planForm, daily: e.target.value})} placeholder="e.g. 1000" />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Duration (Days)</label>
+                  <input type="number" value={planForm.duration} onChange={e => setPlanForm({...planForm, duration: e.target.value})} placeholder="e.g. 60" />
+                </div>
+
+                <div className="package-form-inline">
+                  <input type="checkbox" id="planActive" checked={planForm.isActive} onChange={e => setPlanForm({...planForm, isActive: e.target.checked})} />
+                  <label htmlFor="planActive">Active and available to users</label>
+                </div>
+
+                <div className="package-form-footer">
                   <button className="admin-btn-secondary" onClick={() => setPlanModal(null)}>Cancel</button>
                   <button className="admin-btn-primary" onClick={() => {
-                     handlePlanAction(planModal === 'new' ? 'POST' : 'PUT', planModal === 'new' ? null : planModal, planForm);
-                     setPlanModal(null);
+                    handlePlanAction(planModal === 'new' ? 'POST' : 'PUT', planModal === 'new' ? null : planModal, planForm);
+                    setPlanModal(null);
                   }}>Save Package</button>
-               </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
